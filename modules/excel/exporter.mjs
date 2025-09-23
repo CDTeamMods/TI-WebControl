@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 
 /**
- * 📊 Módulo de Exportação Excel - TecSave
+ * 📊 Módulo de Exportação Excel - TI-WebControl
  * Responsável por gerar relatórios Excel formatados dos atendimentos
  */
 
@@ -14,7 +14,7 @@ export async function generateAtendimentosExcel(atendimentos) {
     try {
         // Criar workbook com ExcelJS
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Relatório de Atendimentos TecSave');
+        const worksheet = workbook.addWorksheet('Relatório de Atendimentos TI-WebControl');
 
         // Congela cabeçalho
         worksheet.views = [{ state: "frozen", ySplit: 3 }];
@@ -22,7 +22,7 @@ export async function generateAtendimentosExcel(atendimentos) {
         // Título principal
         worksheet.mergeCells('A1:I1');
         const titleCell = worksheet.getCell('A1');
-        titleCell.value = '📊 RELATÓRIO DE ATENDIMENTOS - TECSAVE';
+        titleCell.value = '📊 RELATÓRIO DE ATENDIMENTOS - TI-WEBCONTROL';
         titleCell.font = { bold: true, size: 16, color: { argb: 'FF1F4E78' } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F8FF' } };
@@ -175,5 +175,5 @@ export async function generateAtendimentosExcel(atendimentos) {
  */
 export function generateExcelFileName() {
     const date = new Date().toISOString().split('T')[0];
-    return `relatorio_atendimentos_tecsave_${date}.xlsx`;
+    return `relatorio_atendimentos_ti_webcontrol_${date}.xlsx`;
 }

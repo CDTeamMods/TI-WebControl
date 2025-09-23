@@ -1,7 +1,7 @@
-// Sistema de Suporte TecSave
-class TecSaveApp {
+// Sistema de Suporte TI-WebControl
+class TIWebControlApp {
     constructor() {
-        this.atendimentos = JSON.parse(localStorage.getItem('tecsave_atendimentos')) || [];
+        this.atendimentos = JSON.parse(localStorage.getItem('tiwebcontrol_atendimentos')) || [];
         this.currentSection = 'dashboard';
         this.init();
     }
@@ -356,7 +356,7 @@ class TecSaveApp {
     }
 
     saveAtendimentos() {
-        localStorage.setItem('tecsave_atendimentos', JSON.stringify(this.atendimentos));
+        localStorage.setItem('tiwebcontrol_atendimentos', JSON.stringify(this.atendimentos));
     }
 
     formatDate(dateString) {
@@ -428,7 +428,7 @@ class TecSaveApp {
             // Criar link para download
             const a = document.createElement('a');
             a.href = url;
-            a.download = `atendimentos_tecsave_${new Date().toISOString().split('T')[0]}.xlsx`;
+            a.download = `atendimentos_tiwebcontrol_${new Date().toISOString().split('T')[0]}.xlsx`;
             document.body.appendChild(a);
             a.click();
             
@@ -598,6 +598,6 @@ class TecSaveApp {
 // Inicializar aplicação
 let app;
 document.addEventListener('DOMContentLoaded', () => {
-    app = new TecSaveApp();
-    console.log('🚀 TecSave App iniciado com sucesso!');
+    app = new TIWebControlApp();
+console.log('🚀 TI-WebControl App iniciado com sucesso!');
 });

@@ -40,7 +40,7 @@
     </g>
   </g>
   
-  <!-- TecSave Text -->
+  <!-- TI-WebControl Text -->
   <text x="256" y="420" text-anchor="middle" font-family="Arial, sans-serif" 
-        font-size="36" font-weight="bold" fill="#2c3e50">TecSave</text>
+        font-size="28" font-weight="bold" fill="#2c3e50">TI-WebControl</text>
 </svg>

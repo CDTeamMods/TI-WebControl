@@ -1,5 +1,5 @@
 /**
- * 🎫 Módulo de Gerenciamento de Atendimentos - TecSave
+ * 🎫 Módulo de Gerenciamento de Atendimentos - TI-WebControl
  * Responsável por todas as operações relacionadas aos atendimentos
  */
 

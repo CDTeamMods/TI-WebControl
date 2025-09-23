@@ -1,7 +1,7 @@
 {
-  "name": "TecSave Suporte",
+  "name": "TI-WebControl Suporte",
   "ios_identifier": "",
-  "android_identifier": "com.tecsave.suporte",
+  "android_identifier": "com.tiwebcontrol.suporte",
   "update": "now",
   "content_url": "https://your-server.com/",
   "release": "2025.09.23-12.34.35",

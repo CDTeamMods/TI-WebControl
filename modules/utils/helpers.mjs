@@ -1,5 +1,5 @@
 /**
- * 🛠️ Módulo de Utilitários - TecSave
+ * 🛠️ Módulo de Utilitários - TI-WebControl
  * Funções auxiliares para formatação, validação e operações comuns
  */
 
