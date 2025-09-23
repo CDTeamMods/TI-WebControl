@@ -1,0 +1,12 @@
+# Arquivos a serem ignorados pelo Hot Code Push
+chcp.json
+chcp.manifest
+.chcpignore
+
+# Arquivos temporários
+*.tmp
+*.log
+
+# Arquivos de desenvolvimento
+.DS_Store
+Thumbs.db

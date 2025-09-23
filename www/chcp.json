@@ -1,0 +1,11 @@
+{
+  "name": "TecSave Suporte",
+  "ios_identifier": "",
+  "android_identifier": "com.tecsave.suporte",
+  "update": "now",
+  "content_url": "https://your-server.com/",
+  "release": "2025.09.23-12.34.35",
+  "min_native_interface": 1,
+  "auto_download": true,
+  "auto_install": true
+}

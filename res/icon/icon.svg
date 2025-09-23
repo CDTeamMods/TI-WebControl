@@ -1,0 +1,46 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="toolGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2980b9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGradient)" stroke="#2c3e50" stroke-width="8"/>
+  
+  <!-- Tools Icon -->
+  <g transform="translate(256,256)">
+    <!-- Wrench -->
+    <path d="M-80,-60 L-40,-20 L-20,-40 L-60,-80 Z M-40,-20 L40,60 L60,40 L-20,-40 Z" 
+          fill="url(#toolGradient)" stroke="#2c3e50" stroke-width="4"/>
+    
+    <!-- Screwdriver -->
+    <path d="M20,-80 L80,-20 L60,0 L0,-60 Z M0,-60 L-60,0 L-40,20 L20,-40 Z" 
+          fill="url(#toolGradient)" stroke="#2c3e50" stroke-width="4"/>
+    
+    <!-- Gear -->
+    <circle cx="0" cy="0" r="30" fill="url(#toolGradient)" stroke="#2c3e50" stroke-width="3"/>
+    <circle cx="0" cy="0" r="15" fill="#2c3e50"/>
+    
+    <!-- Gear teeth -->
+    <g fill="url(#toolGradient)" stroke="#2c3e50" stroke-width="2">
+      <rect x="-3" y="-40" width="6" height="10" rx="2"/>
+      <rect x="-3" y="30" width="6" height="10" rx="2"/>
+      <rect x="30" y="-3" width="10" height="6" rx="2"/>
+      <rect x="-40" y="-3" width="10" height="6" rx="2"/>
+      <rect x="21" y="-24" width="8" height="6" rx="2" transform="rotate(45)"/>
+      <rect x="21" y="18" width="8" height="6" rx="2" transform="rotate(45)"/>
+      <rect x="-29" y="-24" width="8" height="6" rx="2" transform="rotate(-45)"/>
+      <rect x="-29" y="18" width="8" height="6" rx="2" transform="rotate(-45)"/>
+    </g>
+  </g>
+  
+  <!-- TecSave Text -->
+  <text x="256" y="420" text-anchor="middle" font-family="Arial, sans-serif" 
+        font-size="36" font-weight="bold" fill="#2c3e50">TecSave</text>
+</svg>

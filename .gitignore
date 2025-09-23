@@ -1,0 +1,8 @@
+node_modules/
+.trae/
+.env
+
+**/*.log
+**/*lock*
+**/*.zip
+config.xml

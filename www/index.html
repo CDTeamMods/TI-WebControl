@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">CDTeam - Sistema de Suporte Técnico</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Overlay para menu mobile -->
+        <div class="nav-overlay" id="nav-overlay"></div>
+        
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-tools"></i>
+                <h1>CDTeam</h1>
+            </div>
+            
+            <!-- Botão hambúrguer para mobile -->
+            <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            
+            <nav class="nav" id="nav-menu">
+                <button class="nav-btn active" data-section="dashboard">
+                    <i class="fas fa-home"></i> Dashboard
+                </button>
+                <button class="nav-btn" data-section="atendimentos">
+                    <i class="fas fa-ticket-alt"></i> Atendimentos
+                </button>
+                <button class="nav-btn" data-section="novo-atendimento">
+                    <i class="fas fa-plus"></i> Novo Atendimento
+                </button>
+                <button class="nav-btn" data-section="ferramentas">
+                    <i class="fas fa-wrench"></i> Ferramentas
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="total-atendimentos">0</h3>
+                            <p>Atendimentos Abertos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon urgent">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="urgent-atendimentos">0</h3>
+                            <p>Urgentes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon completed">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="completed-atendimentos">0</h3>
+                            <p>Resolvidos Hoje</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="recent-activity">
+                    <h3><i class="fas fa-clock"></i> Atividade Recente</h3>
+                    <div id="activity-list" class="activity-list">
+                        <!-- Atividades serão carregadas aqui -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Atendimentos Section -->
+            <section id="atendimentos" class="section">
+                <h2><i class="fas fa-list"></i> Lista de Atendimentos</h2>
+                <div class="filters">
+                    <select id="filter-status">
+                        <option value="">Todos os Status</option>
+                        <option value="aberto">Aberto</option>
+                        <option value="em-andamento">Em Andamento</option>
+                        <option value="resolvido">Resolvido</option>
+                    </select>
+                    <select id="filter-priority">
+                        <option value="">Todas as Prioridades</option>
+                        <option value="baixa">Baixa</option>
+                        <option value="media">Média</option>
+                        <option value="alta">Alta</option>
+                        <option value="urgente">Urgente</option>
+                    </select>
+                </div>
+                <div id="atendimentos-list" class="atendimentos-list">
+                    <!-- Atendimentos serão carregados aqui -->
+                </div>
+            </section>
+
+            <!-- Novo Atendimento Section -->
+            <section id="novo-atendimento" class="section">
+                <h2><i class="fas fa-plus-circle"></i> Criar Novo Atendimento</h2>
+                <form id="atendimento-form" class="atendimento-form">
+                    <div class="form-group">
+                        <label for="cliente">Cliente/Empresa:</label>
+                        <input type="text" id="cliente" name="cliente" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="problema">Tipo de Problema:</label>
+                        <select id="problema" name="problema" required>
+                            <option value="">Selecione o tipo</option>
+                            <option value="hardware">Hardware</option>
+                            <option value="software">Software</option>
+                            <option value="rede">Rede/Internet</option>
+                            <option value="email">E-mail</option>
+                            <option value="impressora">Impressora</option>
+                            <option value="sistema">Sistema Operacional</option>
+                            <option value="backup">Backup/Recuperação</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="prioridade">Prioridade:</label>
+                        <select id="prioridade" name="prioridade" required>
+                            <option value="">Selecione a prioridade</option>
+                            <option value="baixa">Baixa</option>
+                            <option value="media">Média</option>
+                            <option value="alta">Alta</option>
+                            <option value="urgente">Urgente</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="descricao">Descrição do Problema:</label>
+                        <textarea id="descricao" name="descricao" rows="5" required 
+                                  placeholder="Descreva detalhadamente o problema..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-save"></i> Criar Atendimento
+                    </button>
+                </form>
+            </section>
+
+            <!-- Ferramentas Section -->
+            <section id="ferramentas" class="section">
+                <h2><i class="fas fa-toolbox"></i> Ferramentas de Suporte</h2>
+                <div class="tools-grid">
+
+                    <div class="tool-card" onclick="app.showSystemInfo()">
+                        <i class="fas fa-desktop"></i>
+                        <h3>Info do Sistema</h3>
+                        <p>Informações do computador</p>
+                    </div>
+                    <div class="tool-card export-tool" onclick="app.exportAtendimentosToExcel()">
+                        <i class="fas fa-file-excel"></i>
+                        <h3>Exportar Excel</h3>
+                        <p>Baixar relatório de atendimentos</p>
+                    </div>
+                </div>
+
+                
+                <div id="tool-result" class="tool-result" style="display: none;">
+                    <h3>Resultado:</h3>
+                    <div id="tool-output"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js"></script>
+    <script>
+        // Carregar cordova.js apenas se estivermos em ambiente Cordova
+        if (window.cordova || document.URL.indexOf('http://') === -1 && document.URL.indexOf('https://') === -1) {
+            const script = document.createElement('script');
+            script.src = 'cordova.js';
+            script.onerror = function() {
+                // Silenciosamente ignora erro se cordova.js não existir
+                console.log('Cordova.js não encontrado - executando em modo web');
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+</body>
+</html>
