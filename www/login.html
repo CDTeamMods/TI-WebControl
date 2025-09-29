@@ -65,7 +65,7 @@
                 <div class="login-footer">
                     <p class="default-credentials">
                         <i class="fas fa-info-circle"></i>
-                        Credenciais padrão: <strong>admin</strong> / <strong>changepassword</strong>
+                        Credenciais padrão: <strong id="default-username">admin</strong> / <strong id="default-password">changepassword</strong>
                     </p>
                 </div>
             </form>
@@ -84,6 +84,8 @@
     <script>
         // 🔧 Forçar funcionalidade dos inputs
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Configurando inputs para serem editáveis...');
+            
             const inputs = document.querySelectorAll('input');
             
             inputs.forEach(input => {
@@ -116,7 +118,36 @@
             });
             
             console.log('✅ Inputs configurados para serem editáveis');
+            
+            // Carregar credenciais padrão dinamicamente
+            loadDefaultCredentials();
         });
+
+        async function loadDefaultCredentials() {
+            try {
+                console.log('🔧 Carregando credenciais padrão...');
+                const response = await fetch('/api/config');
+                
+                if (response.ok) {
+                    const config = await response.json();
+                    
+                    if (config.defaultCredentials) {
+                        const usernameElement = document.getElementById('default-username');
+                        const passwordElement = document.getElementById('default-password');
+                        
+                        if (usernameElement && passwordElement) {
+                            usernameElement.textContent = config.defaultCredentials.username;
+                            passwordElement.textContent = config.defaultCredentials.password;
+                            console.log('✅ Credenciais padrão atualizadas:', config.defaultCredentials);
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ Não foi possível carregar as credenciais padrão');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar credenciais padrão:', error);
+            }
+        }
     </script>
 </body>
 </html>

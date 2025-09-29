@@ -222,7 +222,11 @@ app.get('/login.html', (req, res) => {
 // Rota para obter configurações do sistema
 app.get('/api/config', (req, res) => {
     res.json({
-        websiteName: process.env.WEBSITE_NAME || 'Sistema de Atendimento'
+        websiteName: process.env.WEBSITE_NAME || 'Sistema de Atendimento',
+        defaultCredentials: {
+            username: process.env.ADMIN_ADMIN || 'admin',
+            password: process.env.PASSWORD_ADMIN || 'changepassword'
+        }
     });
 });
 
