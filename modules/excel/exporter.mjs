@@ -6,38 +6,49 @@ import ExcelJS from 'exceljs';
  */
 
 /**
+ * Retorna o nome fixo do website
+ * @returns {string} Nome do website
+ */
+function getWebsiteName() {
+    return 'TI-WEBCONTROL';
+}
+
+/**
  * Gera um relatório Excel formatado com os atendimentos
  * @param {Array} atendimentos - Array de atendimentos para exportar
  * @returns {Buffer} Buffer do arquivo Excel
  */
 export async function generateAtendimentosExcel(atendimentos) {
     try {
+        // Obter nome do website
+        const websiteName = getWebsiteName();
+        
         // Criar workbook com ExcelJS
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Relatório de Atendimentos TI-WebControl');
+        const worksheet = workbook.addWorksheet(`Relatório de Atendimentos ${websiteName}`);
+        const resumoWorksheet = workbook.addWorksheet('Resumo');
 
         // Congela cabeçalho
         worksheet.views = [{ state: "frozen", ySplit: 3 }];
 
         // Título principal
-        worksheet.mergeCells('A1:I1');
+        worksheet.mergeCells('A1:F1');
         const titleCell = worksheet.getCell('A1');
-        titleCell.value = '📊 RELATÓRIO DE ATENDIMENTOS - TI-WEBCONTROL';
+        titleCell.value = `📊 RELATÓRIO DE ATENDIMENTOS - ${websiteName}`;
         titleCell.font = { bold: true, size: 16, color: { argb: 'FF1F4E78' } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F8FF' } };
 
         // Data de geração
-        worksheet.mergeCells('A2:I2');
+        worksheet.mergeCells('A2:F2');
         const dateCell = worksheet.getCell('A2');
         dateCell.value = `📅 Gerado em: ${new Date().toLocaleString('pt-BR')}`;
         dateCell.font = { italic: true, size: 11, color: { argb: 'FF666666' } };
         dateCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-        // Cabeçalho das colunas
+        // Cabeçalho das colunas (nova ordem: Empresa, Cliente, Descrição, Problema, Data de Criação, Status)
         const headers = [
-            'ID', 'Título', 'Descrição', 'Prioridade', 'Status', 
-            'Cliente', 'Técnico', 'Data de Criação', 'Última Atualização'
+            'Empresa', 'Cliente', 'Descrição', 'Problema', 'Data de Criação', 'Status'
         ];
         const headerRow = worksheet.addRow(headers);
 
@@ -54,8 +65,8 @@ export async function generateAtendimentosExcel(atendimentos) {
             };
         });
 
-        // Largura das colunas
-        const colWidths = [8, 30, 45, 15, 15, 25, 20, 18, 18];
+        // Largura das colunas (ajustadas para nova ordem)
+        const colWidths = [20, 20, 35, 25, 18, 15];
         colWidths.forEach((width, i) => worksheet.getColumn(i + 1).width = width);
 
         // Quebra automática de linha para descrição
@@ -63,16 +74,15 @@ export async function generateAtendimentosExcel(atendimentos) {
 
         // Adicionar dados dos atendimentos
         atendimentos.forEach((atendimento) => {
+            // Mapear campos corretamente baseado na estrutura do banco (nova ordem)
             const row = worksheet.addRow([
-                atendimento.id,
-                atendimento.title,
-                atendimento.description,
-                atendimento.priority,
-                atendimento.status,
-                atendimento.client || 'N/A',
-                atendimento.technician || 'N/A',
-                new Date(atendimento.createdAt).toLocaleDateString('pt-BR'),
-                new Date(atendimento.updatedAt).toLocaleDateString('pt-BR')
+                atendimento.empresa || 'Não informada',
+                atendimento.cliente || atendimento.client || 'Não informado',
+                atendimento.description || atendimento.descricao || 'Sem descrição',
+                atendimento.problema || atendimento.title || 'Não especificado',
+                atendimento.created_at ? new Date(atendimento.created_at).toLocaleDateString('pt-BR') : 
+                    (atendimento.createdAt ? new Date(atendimento.createdAt).toLocaleDateString('pt-BR') : 'Não informada'),
+                (atendimento.status || 'Não informado').toUpperCase()
             ]);
         });
 
@@ -94,42 +104,37 @@ export async function generateAtendimentosExcel(atendimentos) {
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
                 }
 
-                // Quebra de linha para descrição
-                if (colNumber === 3) {
-                    cell.alignment = { wrapText: true, vertical: 'top' };
+                // Alinhamento específico por coluna
+                if (colNumber === 1 || colNumber === 2 || colNumber === 3 || colNumber === 6) {
+                    // Empresa (1), Cliente (2), Descrição (3) e Status (6) - centralizados
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    if (colNumber === 3) {
+                        // Descrição (3) - centralizada com quebra de linha
+                        cell.alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
+                    }
+                } else if (colNumber === 5) {
+                    // Data de Criação (5) - centralizada
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    // Aplicar formato de data
+                    cell.numFmt = 'dd/mm/yyyy';
                 } else {
                     cell.alignment = { vertical: 'middle' };
                 }
 
-                // Cores especiais para Status (coluna 5)
-                if (colNumber === 5) {
+                // Cores especiais para Status (coluna 6)
+                if (colNumber === 6) {
                     const status = cell.value ? cell.value.toString().toLowerCase() : '';
                     if (status.includes('resolvido')) {
                         cell.font = { color: { argb: 'FF228B22' }, bold: true }; // Verde
                     } else if (status.includes('aberto')) {
                         cell.font = { color: { argb: 'FFB22222' }, bold: true }; // Vermelho
                         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF99' } }; // Amarelo claro
-                    } else if (status.includes('em andamento')) {
+                    } else if (status.includes('em andamento') || status.includes('andamento')) {
                         cell.font = { color: { argb: 'FF1E90FF' }, bold: true }; // Azul
                         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB0E0E6' } }; // Azul claro
-                    }
-                }
-
-                // Cores especiais para Prioridade (coluna 4)
-                if (colNumber === 4) {
-                    const priority = cell.value ? cell.value.toString().toLowerCase() : '';
-                    if (priority.includes('crítica')) {
-                        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC3545' } }; // Vermelho
-                    } else if (priority.includes('alta')) {
-                        cell.font = { color: { argb: 'FF000000' }, bold: true };
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC107' } }; // Amarelo
-                    } else if (priority.includes('média')) {
-                        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF17A2B8' } }; // Azul
-                    } else if (priority.includes('baixa')) {
-                        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF28A745' } }; // Verde
+                    } else if (status.includes('pendente')) {
+                        cell.font = { color: { argb: 'FFFF8C00' }, bold: true }; // Laranja
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEAA7' } }; // Laranja claro
                     }
                 }
             });
@@ -139,25 +144,84 @@ export async function generateAtendimentosExcel(atendimentos) {
             row.height = maxLines * 15;
         });
 
-        // Resumo automático no final
-        const totalRows = worksheet.rowCount;
-        const resumoRow = worksheet.addRow([]);
-        resumoRow.getCell(2).value = '📈 Resumo:';
-        resumoRow.getCell(2).font = { bold: true, size: 12, color: { argb: 'FF1F4E78' } };
+        // ===== ABA DE RESUMO =====
+        // Título da aba de resumo
+        resumoWorksheet.mergeCells('A1:D1');
+        const resumoTitleCell = resumoWorksheet.getCell('A1');
+        resumoTitleCell.value = `📈 RESUMO DE ATENDIMENTOS - ${websiteName}`;
+        resumoTitleCell.font = { bold: true, size: 16, color: { argb: 'FF1F4E78' } };
+        resumoTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        resumoTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F8FF' } };
+
+        // Data de geração na aba de resumo
+        resumoWorksheet.mergeCells('A2:D2');
+        const resumoDateCell = resumoWorksheet.getCell('A2');
+        resumoDateCell.value = `📅 Gerado em: ${new Date().toLocaleString('pt-BR')}`;
+        resumoDateCell.font = { italic: true, size: 11, color: { argb: 'FF666666' } };
+        resumoDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Cabeçalho do resumo
+        const resumoHeaderRow = resumoWorksheet.addRow(['Status', 'Quantidade', 'Percentual', '']);
+        resumoHeaderRow.eachCell((cell, colNumber) => {
+            if (colNumber <= 3) {
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E78' } };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'medium', color: { argb: 'FF000000' } }
+                };
+            }
+        });
 
         // Contar status
         const statusCount = {
-            'Aberto': atendimentos.filter(a => a.status === 'Aberto').length,
-            'Em Andamento': atendimentos.filter(a => a.status === 'Em Andamento').length,
-            'Resolvido': atendimentos.filter(a => a.status === 'Resolvido').length
+            'Em Andamento': atendimentos.filter(a => (a.status || '').toLowerCase().includes('andamento')).length,
+            'Resolvido': atendimentos.filter(a => (a.status || '').toLowerCase().includes('resolvido')).length
         };
 
-        let colIndex = 3;
+        const total = atendimentos.length;
+
+        // Adicionar dados do resumo
         Object.entries(statusCount).forEach(([status, count]) => {
-            resumoRow.getCell(colIndex).value = `${status}: ${count}`;
-            resumoRow.getCell(colIndex).font = { bold: true };
-            colIndex++;
+            const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+            const resumoDataRow = resumoWorksheet.addRow([status, count, `${percentage}%`, '']);
+            
+            resumoDataRow.eachCell((cell, colNumber) => {
+                if (colNumber <= 3) {
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FF000000' } },
+                        left: { style: 'thin', color: { argb: 'FF000000' } },
+                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                        right: { style: 'thin', color: { argb: 'FF000000' } }
+                    };
+                }
+            });
         });
+
+        // Total na aba de resumo
+        const totalRow = resumoWorksheet.addRow(['TOTAL', total, '100%', '']);
+        totalRow.eachCell((cell, colNumber) => {
+            if (colNumber <= 3) {
+                cell.font = { bold: true };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F8FF' } };
+                cell.border = {
+                    top: { style: 'medium', color: { argb: 'FF000000' } },
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'medium', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } }
+                };
+            }
+        });
+
+        // Largura das colunas na aba de resumo
+        resumoWorksheet.getColumn(1).width = 15;
+        resumoWorksheet.getColumn(2).width = 12;
+        resumoWorksheet.getColumn(3).width = 12;
 
         // Gerar buffer do Excel
         const buffer = await workbook.xlsx.writeBuffer();
@@ -174,6 +238,7 @@ export async function generateAtendimentosExcel(atendimentos) {
  * @returns {string} Nome do arquivo
  */
 export function generateExcelFileName() {
+    const websiteName = getWebsiteName().toLowerCase().replace(/[^a-z0-9]/g, '_');
     const date = new Date().toISOString().split('T')[0];
-    return `relatorio_atendimentos_ti_webcontrol_${date}.xlsx`;
+    return `relatorio_atendimentos_${websiteName}_${date}.xlsx`;
 }

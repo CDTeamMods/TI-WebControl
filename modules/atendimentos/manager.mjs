@@ -3,135 +3,192 @@
  * Responsável por todas as operações relacionadas aos atendimentos
  */
 
+import database from '../auth/database.mjs';
+
 /**
- * Dados iniciais dos atendimentos (simulando banco de dados)
+ * Dados dos atendimentos (cache local para compatibilidade)
  */
-let atendimentos = [
-    {
-        id: 1,
-        title: 'Problema de Conectividade',
-        description: 'Cliente relatou lentidão na conexão com o servidor',
-        priority: 'Alta',
-        status: 'Aberto',
-        client: 'Empresa ABC Ltda',
-        technician: 'João Silva',
-        createdAt: new Date('2024-01-15T10:30:00'),
-        updatedAt: new Date('2024-01-15T10:30:00')
-    },
-    {
-        id: 2,
-        title: 'Erro no Sistema de Backup',
-        description: 'Backup automático falhou na madrugada',
-        priority: 'Crítica',
-        status: 'Em Andamento',
-        client: 'TechCorp Solutions',
-        technician: 'Maria Santos',
-        createdAt: new Date('2024-01-14T08:15:00'),
-        updatedAt: new Date('2024-01-15T09:45:00')
-    },
-    {
-        id: 3,
-        title: 'Atualização de Software',
-        description: 'Solicitação de atualização do sistema operacional',
-        priority: 'Média',
-        status: 'Resolvido',
-        client: 'Inovação Digital',
-        technician: 'Carlos Oliveira',
-        createdAt: new Date('2024-01-13T14:20:00'),
-        updatedAt: new Date('2024-01-14T16:30:00')
-    }
-];
+let atendimentos = [];
 
 /**
  * Obtém todos os atendimentos
- * @returns {Array} Array de atendimentos
+ * @returns {Array} Lista de atendimentos
  */
-export function getAllAtendimentos() {
-    return atendimentos;
+export async function obterAtendimentos() {
+    try {
+        const atendimentosDB = await database.getAllAtendimentos();
+        
+        // Atualiza o cache local
+        atendimentos = atendimentosDB;
+        
+        return atendimentosDB;
+    } catch (error) {
+        console.error('❌ Erro ao obter atendimentos do banco de dados:', error);
+        
+        // Fallback para cache local
+        return atendimentos;
+    }
 }
 
 /**
  * Obtém atendimentos formatados para exibição
+ * @param {Array} atendimentosList - Lista de atendimentos (opcional)
  * @returns {Array} Array de atendimentos formatados
  */
-export function getFormattedAtendimentos() {
-    return atendimentos.map(atendimento => ({
+export function getFormattedAtendimentos(atendimentosList = null) {
+    const lista = atendimentosList || atendimentos;
+    
+    return lista.map(atendimento => ({
         ...atendimento,
-        createdAt: atendimento.createdAt.toLocaleDateString('pt-BR'),
-        updatedAt: atendimento.updatedAt.toLocaleDateString('pt-BR')
+        // Mapear campos do backend para o frontend
+        descricao: atendimento.description || atendimento.descricao || 'Descrição não informada',
+        // Preservar datas originais em formato ISO para que o frontend possa formatá-las corretamente
+        dataCriacao: atendimento.created_at || atendimento.dataCriacao || new Date().toISOString(),
+        createdAt: atendimento.created_at || atendimento.createdAt || new Date().toISOString(),
+        updatedAt: atendimento.updated_at || atendimento.updatedAt || new Date().toISOString()
     }));
 }
 
 /**
  * Obtém um atendimento por ID
- * @param {number} id - ID do atendimento
+ * @param {string} id - ID do atendimento
  * @returns {Object|null} Atendimento encontrado ou null
  */
-export function getAtendimentoById(id) {
-    return atendimentos.find(atendimento => atendimento.id === parseInt(id));
+export async function obterAtendimentoPorId(id) {
+    try {
+        const atendimento = await database.getAtendimentoById(id);
+        return atendimento;
+    } catch (error) {
+        console.error('❌ Erro ao obter atendimento por ID do banco de dados:', error);
+        
+        // Fallback para cache local
+        return atendimentos.find(atendimento => atendimento.id === id) || null;
+    }
 }
 
 /**
  * Cria um novo atendimento
- * @param {Object} atendimentoData - Dados do novo atendimento
+ * @param {Object} dadosAtendimento - Dados do atendimento
  * @returns {Object} Atendimento criado
  */
-export function createAtendimento(atendimentoData) {
-    const newAtendimento = {
-        id: atendimentos.length > 0 ? Math.max(...atendimentos.map(t => t.id)) + 1 : 1,
-        title: atendimentoData.title,
-        description: atendimentoData.description,
-        priority: atendimentoData.priority || 'Média',
-        status: atendimentoData.status || 'Aberto',
-        client: atendimentoData.client,
-        technician: atendimentoData.technician,
-        createdAt: new Date(),
-        updatedAt: new Date()
+export async function criarAtendimento(dadosAtendimento) {
+    const novoAtendimento = {
+        title: dadosAtendimento.title || 'Atendimento sem título',
+        description: dadosAtendimento.description || '',
+        cliente: dadosAtendimento.cliente || '',
+        empresa: dadosAtendimento.empresa || '',
+        problema: dadosAtendimento.problema || '',
+        prioridade: dadosAtendimento.prioridade || 'baixa',
+        status: 'em andamento',
+        created_by: dadosAtendimento.created_by || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
     };
 
-    atendimentos.push(newAtendimento);
-    console.log(`✅ Atendimento criado: ${newAtendimento.title} (ID: ${newAtendimento.id})`);
-    return newAtendimento;
+
+
+    try {
+        const atendimentoCriado = await database.createAtendimento(novoAtendimento);
+        
+        // Atualiza o cache local para compatibilidade
+        atendimentos.push(atendimentoCriado);
+        
+        return atendimentoCriado;
+    } catch (error) {
+        console.error('❌ Erro ao criar atendimento no banco de dados:', error);
+        
+        // Fallback para cache local
+        const fallbackAtendimento = {
+            id: Date.now().toString(),
+            ...novoAtendimento
+        };
+        atendimentos.push(fallbackAtendimento);
+        return fallbackAtendimento;
+    }
 }
 
 /**
- * Atualiza um atendimento existente
- * @param {number} id - ID do atendimento
- * @param {Object} updateData - Dados para atualizar
- * @returns {Object|null} Atendimento atualizado ou null se não encontrado
+ * Atualiza um atendimento
+ * @param {string} id - ID do atendimento
+ * @param {Object} dadosAtualizacao - Dados para atualização
+ * @returns {Object|null} Atendimento atualizado ou null
  */
-export function updateAtendimento(id, updateData) {
-    const atendimentoIndex = atendimentos.findIndex(atendimento => atendimento.id === parseInt(id));
-    
-    if (atendimentoIndex === -1) {
-        return null;
+export async function atualizarAtendimento(id, dadosAtualizacao) {
+    try {
+        const dadosComTimestamp = {
+            ...dadosAtualizacao,
+            updated_at: new Date().toISOString()
+        };
+        
+        const atendimentoAtualizado = await database.updateAtendimento(id, dadosComTimestamp);
+        
+        if (!atendimentoAtualizado) {
+            throw new Error(`Atendimento com ID ${id} não foi encontrado ou não pôde ser atualizado`);
+        }
+        
+        // Atualiza o cache local
+        const index = atendimentos.findIndex(atendimento => atendimento.id === id);
+        if (index !== -1) {
+            atendimentos[index] = atendimentoAtualizado;
+        }
+        
+        return atendimentoAtualizado;
+    } catch (error) {
+        console.error('❌ Erro ao atualizar atendimento no banco de dados:', error);
+        
+        // Verificar se o atendimento existe no cache local
+        const index = atendimentos.findIndex(atendimento => atendimento.id === id);
+        if (index === -1) {
+            throw new Error(`Atendimento com ID ${id} não foi encontrado`);
+        }
+        
+        // Fallback: tentar atualizar apenas no cache local
+        try {
+            atendimentos[index] = {
+                ...atendimentos[index],
+                ...dadosAtualizacao,
+                updated_at: new Date().toISOString()
+            };
+            console.warn('Atualização realizada apenas no cache local devido a erro no banco de dados');
+            return atendimentos[index];
+        } catch (cacheError) {
+            console.error('Erro ao atualizar cache local:', cacheError);
+            throw new Error(`Erro ao atualizar status do atendimento: ${error.message}`);
+        }
     }
-
-    atendimentos[atendimentoIndex] = {
-        ...atendimentos[atendimentoIndex],
-        ...updateData,
-        updatedAt: new Date()
-    };
-
-    console.log(`✅ Atendimento atualizado: ID ${id}`);
-    return atendimentos[atendimentoIndex];
 }
 
 /**
- * Remove um atendimento
- * @param {number} id - ID do atendimento
- * @returns {boolean} True se removido, false se não encontrado
+ * Exclui um atendimento
+ * @param {string} id - ID do atendimento
+ * @returns {boolean} True se excluído com sucesso
  */
-export function deleteAtendimento(id) {
-    const atendimentoIndex = atendimentos.findIndex(atendimento => atendimento.id === parseInt(id));
-    
-    if (atendimentoIndex === -1) {
-        return false;
-    }
+export async function excluirAtendimento(id) {
+    try {
+        const sucesso = await database.deleteAtendimento(id);
+        
+        if (sucesso) {
+            // Remove do cache local
+            const index = atendimentos.findIndex(atendimento => atendimento.id === id);
+            if (index !== -1) {
+                atendimentos.splice(index, 1);
+            }
+        }
+        
+        return sucesso;
+    } catch (error) {
+        console.error('❌ Erro ao excluir atendimento do banco de dados:', error);
+        
+        // Fallback para cache local
+        const index = atendimentos.findIndex(atendimento => atendimento.id === id);
+        
+        if (index === -1) {
+            return false;
+        }
 
-    const removedAtendimento = atendimentos.splice(atendimentoIndex, 1)[0];
-    console.log(`🗑️ Atendimento removido: ${removedAtendimento.title} (ID: ${id})`);
-    return true;
+        atendimentos.splice(index, 1);
+        return true;
+    }
 }
 
 /**
@@ -139,10 +196,18 @@ export function deleteAtendimento(id) {
  * @param {string} status - Status para filtrar
  * @returns {Array} Atendimentos filtrados
  */
-export function getAtendimentosByStatus(status) {
-    return atendimentos.filter(atendimento => 
-        atendimento.status.toLowerCase() === status.toLowerCase()
-    );
+export async function getAtendimentosByStatus(status) {
+    try {
+        const atendimentosStatus = await database.getAtendimentosByStatus(status);
+        return atendimentosStatus;
+    } catch (error) {
+        console.error('❌ Erro ao obter atendimentos por status do banco de dados:', error);
+        
+        // Fallback para cache local
+        return atendimentos.filter(atendimento => 
+            atendimento.status.toLowerCase() === status.toLowerCase()
+        );
+    }
 }
 
 /**
@@ -150,10 +215,19 @@ export function getAtendimentosByStatus(status) {
  * @param {string} priority - Prioridade para filtrar
  * @returns {Array} Atendimentos filtrados
  */
-export function getAtendimentosByPriority(priority) {
-    return atendimentos.filter(atendimento => 
-        atendimento.priority.toLowerCase() === priority.toLowerCase()
-    );
+export async function getAtendimentosByPriority(priority) {
+    try {
+        const atendimentosPrioridade = await database.getAtendimentosByPrioridade(priority);
+        return atendimentosPrioridade;
+    } catch (error) {
+        console.error('❌ Erro ao obter atendimentos por prioridade do banco de dados:', error);
+        
+        // Fallback para cache local
+        return atendimentos.filter(atendimento => 
+            atendimento.priority?.toLowerCase() === priority.toLowerCase() ||
+            atendimento.prioridade?.toLowerCase() === priority.toLowerCase()
+        );
+    }
 }
 
 /**
@@ -161,14 +235,31 @@ export function getAtendimentosByPriority(priority) {
  * @param {string} searchTerm - Termo de busca
  * @returns {Array} Atendimentos encontrados
  */
-export function searchAtendimentos(searchTerm) {
-    const term = searchTerm.toLowerCase();
-    return atendimentos.filter(atendimento => 
-        atendimento.title.toLowerCase().includes(term) ||
-        atendimento.description.toLowerCase().includes(term) ||
-        atendimento.client.toLowerCase().includes(term) ||
-        atendimento.technician.toLowerCase().includes(term)
-    );
+export async function searchAtendimentos(searchTerm) {
+    try {
+        if (!searchTerm) {
+            return await obterAtendimentos();
+        }
+        
+        const atendimentosEncontrados = await database.searchAtendimentos(searchTerm);
+        return atendimentosEncontrados;
+    } catch (error) {
+        console.error('❌ Erro ao buscar atendimentos no banco de dados:', error);
+        
+        // Fallback para cache local
+        if (!searchTerm) return atendimentos;
+        
+        const term = searchTerm.toLowerCase();
+        return atendimentos.filter(atendimento => 
+            atendimento.title?.toLowerCase().includes(term) ||
+            atendimento.description?.toLowerCase().includes(term) ||
+            atendimento.client?.toLowerCase().includes(term) ||
+            atendimento.technician?.toLowerCase().includes(term) ||
+            atendimento.cliente?.toLowerCase().includes(term) ||
+            atendimento.problema?.toLowerCase().includes(term) ||
+            atendimento.empresa?.toLowerCase().includes(term)
+        );
+    }
 }
 
 /**
@@ -198,37 +289,91 @@ export function getAtendimentoStats() {
 }
 
 /**
- * Valida dados de um atendimento
+ * Valida dados de um atendimento para criação (todos os campos obrigatórios)
  * @param {Object} atendimentoData - Dados do atendimento
  * @returns {Object} Resultado da validação
  */
 export function validateAtendimentoData(atendimentoData) {
     const errors = [];
 
-    if (!atendimentoData.title || atendimentoData.title.trim().length === 0) {
-        errors.push('Título é obrigatório');
+    // Verificar título/problema
+    const title = atendimentoData.title || atendimentoData.problema;
+    if (!title || title.trim().length === 0) {
+        errors.push('Título/Problema é obrigatório');
     }
 
-    if (!atendimentoData.description || atendimentoData.description.trim().length === 0) {
+    // Verificar descrição
+    const description = atendimentoData.description || atendimentoData.descricao;
+    if (!description || description.trim().length === 0) {
         errors.push('Descrição é obrigatória');
     }
 
-    if (!atendimentoData.client || atendimentoData.client.trim().length === 0) {
+    // Verificar cliente
+    const client = atendimentoData.client || atendimentoData.cliente;
+    if (!client || client.trim().length === 0) {
         errors.push('Cliente é obrigatório');
     }
 
-    const validPriorities = ['Baixa', 'Média', 'Alta', 'Crítica'];
-    if (atendimentoData.priority && !validPriorities.includes(atendimentoData.priority)) {
+    // Validar prioridades (aceitar ambos os formatos)
+    const validPriorities = ['Baixa', 'Média', 'Alta', 'Crítica', 'baixa', 'media', 'alta', 'urgente'];
+    const priority = atendimentoData.priority || atendimentoData.prioridade;
+    if (priority && !validPriorities.includes(priority)) {
         errors.push('Prioridade inválida');
     }
 
-    const validStatuses = ['Aberto', 'Em Andamento', 'Resolvido'];
-    if (atendimentoData.status && !validStatuses.includes(atendimentoData.status)) {
+    // Validar status (aceitar ambos os formatos)
+    const validStatuses = ['Aberto', 'Em Andamento', 'Resolvido', 'em-andamento', 'resolvido'];
+    const status = atendimentoData.status;
+    if (status && !validStatuses.includes(status)) {
         errors.push('Status inválido');
     }
 
     return {
         isValid: errors.length === 0,
-        errors
+        errors: errors
+    };
+}
+
+/**
+ * Valida dados de um atendimento para atualização (campos opcionais)
+ * @param {Object} updateData - Dados de atualização
+ * @returns {Object} Resultado da validação
+ */
+export function validateAtendimentoUpdateData(updateData) {
+    const errors = [];
+
+    // Validar prioridades se fornecida
+    const validPriorities = ['Baixa', 'Média', 'Alta', 'Crítica', 'baixa', 'media', 'alta', 'urgente'];
+    const priority = updateData.priority || updateData.prioridade;
+    if (priority && !validPriorities.includes(priority)) {
+        errors.push('Prioridade inválida');
+    }
+
+    // Validar status se fornecido
+    const validStatuses = ['Aberto', 'Em Andamento', 'Resolvido', 'em-andamento', 'resolvido'];
+    const status = updateData.status;
+    if (status && !validStatuses.includes(status)) {
+        errors.push('Status inválido');
+    }
+
+    // Validar campos de texto se fornecidos
+    const title = updateData.title || updateData.problema;
+    if (title !== undefined && title.trim().length === 0) {
+        errors.push('Título/Problema não pode estar vazio');
+    }
+
+    const description = updateData.description || updateData.descricao;
+    if (description !== undefined && description.trim().length === 0) {
+        errors.push('Descrição não pode estar vazia');
+    }
+
+    const client = updateData.client || updateData.cliente;
+    if (client !== undefined && client.trim().length === 0) {
+        errors.push('Cliente não pode estar vazio');
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors: errors
     };
 }

@@ -2,10 +2,18 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#2c3e50">
     <title id="page-title">CDTeam - Sistema de Suporte Técnico</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/atendimentos.css">
+    <link rel="stylesheet" href="css/ferramentas.css">
+    <link rel="stylesheet" href="css/criar-usuario.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -19,26 +27,50 @@
                 <h1>CDTeam</h1>
             </div>
             
+            <!-- Informações do usuário -->
+            <div class="user-info"></div>
+            
             <!-- Botão hambúrguer para mobile -->
-            <button class="mobile-menu-toggle" id="mobile-menu-toggle">
-                <span></span>
-                <span></span>
-                <span></span>
+            <!-- Menu Hambúrguer para Mobile -->
+            <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Abrir menu de navegação">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
             </button>
             
+            <!-- Overlay para fechar menu ao clicar fora -->
+            <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+            
+            <!-- Navegação Principal -->
             <nav class="nav" id="nav-menu">
-                <button class="nav-btn active" data-section="dashboard">
-                    <i class="fas fa-home"></i> Dashboard
-                </button>
-                <button class="nav-btn" data-section="atendimentos">
-                    <i class="fas fa-ticket-alt"></i> Atendimentos
-                </button>
-                <button class="nav-btn" data-section="novo-atendimento">
-                    <i class="fas fa-plus"></i> Novo Atendimento
-                </button>
-                <button class="nav-btn" data-section="ferramentas">
-                    <i class="fas fa-wrench"></i> Ferramentas
-                </button>
+                <div class="nav-header">
+                    <h3><i class="fas fa-bars"></i> Menu</h3>
+                    <button class="nav-close" id="nav-close" aria-label="Fechar menu">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="nav-items">
+                    <button class="nav-btn active" data-section="dashboard">
+                        <i class="fas fa-home"></i> 
+                        <span>Dashboard</span>
+                    </button>
+                    <button class="nav-btn" data-section="atendimentos">
+                        <i class="fas fa-ticket-alt"></i> 
+                        <span>Atendimentos</span>
+                    </button>
+                    <button class="nav-btn" data-section="novo-atendimento">
+                        <i class="fas fa-plus"></i> 
+                        <span>Novo Atendimento</span>
+                    </button>
+                    <button class="nav-btn" data-section="ferramentas">
+                        <i class="fas fa-wrench"></i> 
+                        <span>Ferramentas</span>
+                    </button>
+                    <button class="nav-btn" data-section="criar-usuario" id="nav-criar-usuario" style="display: none;">
+                        <i class="fas fa-user-plus"></i> 
+                        <span>Criar Usuário</span>
+                    </button>
+                </div>
             </nav>
         </header>
 
@@ -83,6 +115,13 @@
                         <!-- Atividades serão carregadas aqui -->
                     </div>
                 </div>
+                
+                <div class="overdue-activity">
+                    <h3><i class="fas fa-exclamation-circle"></i> Atendimentos Atrasados</h3>
+                    <div id="overdue-list" class="activity-list">
+                        <!-- Atendimentos atrasados serão carregados aqui -->
+                    </div>
+                </div>
             </section>
 
             <!-- Atendimentos Section -->
@@ -91,9 +130,11 @@
                 <div class="filters">
                     <select id="filter-status">
                         <option value="">Todos os Status</option>
-                        <option value="aberto">Aberto</option>
-                        <option value="em-andamento">Em Andamento</option>
+                        <option value="em andamento">Em Andamento</option>
                         <option value="resolvido">Resolvido</option>
+                    </select>
+                    <select id="filter-empresa">
+                        <option value="">Todas as Empresas</option>
                     </select>
                     <select id="filter-priority">
                         <option value="">Todas as Prioridades</option>
@@ -113,8 +154,25 @@
                 <h2><i class="fas fa-plus-circle"></i> Criar Novo Atendimento</h2>
                 <form id="atendimento-form" class="atendimento-form">
                     <div class="form-group">
-                        <label for="cliente">Cliente/Empresa:</label>
-                        <input type="text" id="cliente" name="cliente" required>
+                        <label for="empresa">Empresa:</label>
+                        <select id="empresa" name="empresa" required>
+                            <option value="">Selecione a empresa</option>
+                            <!-- Opções serão carregadas dinamicamente -->
+                        </select>
+                        <input type="text" id="empresa-custom" name="empresa-custom" 
+                               placeholder="Digite o nome da empresa..." 
+                               style="display: none; margin-top: 0.5rem;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cliente">Cliente:</label>
+                        <select id="cliente" name="cliente" required disabled>
+                            <option value="">Primeiro selecione uma empresa</option>
+                            <!-- Opções serão carregadas dinamicamente -->
+                        </select>
+                        <input type="text" id="cliente-custom" name="cliente-custom" 
+                               placeholder="Digite o nome do cliente..." 
+                               style="display: none; margin-top: 0.5rem;">
                     </div>
                     
                     <div class="form-group">
@@ -130,6 +188,9 @@
                             <option value="backup">Backup/Recuperação</option>
                             <option value="outro">Outro</option>
                         </select>
+                        <input type="text" id="problema-custom" name="problema-custom" 
+                               placeholder="Especifique qual é o problema..." 
+                               style="display: none; margin-top: 0.5rem;">
                     </div>
                     
                     <div class="form-group">
@@ -160,26 +221,106 @@
                 <h2><i class="fas fa-toolbox"></i> Ferramentas de Suporte</h2>
                 <div class="tools-grid">
 
-                    <div class="tool-card" onclick="app.showSystemInfo()">
-                        <i class="fas fa-desktop"></i>
-                        <h3>Info do Sistema</h3>
+                    <div class="tool-card tool-system" onclick="app.showSystemInfo()">
+                        <div class="tool-icon">
+                            <i class="fas fa-desktop"></i>
+                        </div>
+                        <h3><i class="fas fa-desktop"></i> Info do Sistema</h3>
                         <p>Informações do computador</p>
                     </div>
-                    <div class="tool-card export-tool" onclick="app.exportAtendimentosToExcel()">
-                        <i class="fas fa-file-excel"></i>
-                        <h3>Exportar Excel</h3>
+                    <div class="tool-card tool-utility" onclick="app.exportAtendimentosToExcel()">
+                        <div class="tool-icon">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <h3><i class="fas fa-file-excel"></i> Exportar Excel</h3>
                         <p>Baixar relatório de atendimentos</p>
                     </div>
                 </div>
 
                 
-                <div id="tool-result" class="tool-result" style="display: none;">
-                    <h3>Resultado:</h3>
-                    <div id="tool-output"></div>
+                <div id="tool-result" class="tool-results" style="display: none;">
+                    <h3><i class="fas fa-clipboard-list"></i> Resultado:</h3>
+                    <div class="result-content">
+                        <div id="tool-output"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Criar Usuário Section (apenas para usuário local) -->
+            <section id="criar-usuario" class="section">
+                <h2><i class="fas fa-user-plus"></i> Criar Novo Usuário</h2>
+                <div class="form-container">
+                    <form id="createUserForm" class="user-form">
+                        <div class="form-group">
+                            <label for="newUsername">
+                                <i class="fas fa-user"></i>
+                                Nome de Usuário
+                            </label>
+                            <input type="text" id="newUsername" name="username" required 
+                                   placeholder="Digite o nome de usuário" autocomplete="username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="newEmail">
+                                <i class="fas fa-envelope"></i>
+                                E-mail
+                            </label>
+                            <input type="email" id="newEmail" name="email" required 
+                                   placeholder="Digite o e-mail" autocomplete="email">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="newPassword">
+                                <i class="fas fa-lock"></i>
+                                Senha
+                            </label>
+                            <input type="password" id="newPassword" name="password" required 
+                                   placeholder="Digite a senha" autocomplete="new-password">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirmPassword">
+                                <i class="fas fa-lock"></i>
+                                Confirmar Senha
+                            </label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" required 
+                                   placeholder="Confirme a senha" autocomplete="new-password">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="userRole">
+                                <i class="fas fa-user-tag"></i>
+                                Função
+                            </label>
+                            <select id="userRole" name="role" required>
+                                <option value="">Selecione a função</option>
+                                <option value="user">Usuário</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-user-plus"></i>
+                                Criar Usuário
+                            </button>
+                            <button type="reset" class="btn-secondary">
+                                <i class="fas fa-undo"></i>
+                                Limpar
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="createUserMessage" class="message" style="display: none;"></div>
                 </div>
             </section>
         </main>
     </div>
+
+    <!-- Botão Flutuante para Criar Ticket -->
+    <button id="fab-create-ticket" class="fab" aria-label="Criar novo atendimento" title="Criar novo atendimento">
+        <i class="fas fa-plus"></i>
+    </button>
 
     <!-- Scripts -->
     <script src="js/app.js"></script>

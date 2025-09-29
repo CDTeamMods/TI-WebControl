@@ -6,3 +6,6 @@ node_modules/
 **/*lock*
 **/*.zip
 config.xml
+**/chcp.json
+**/*.db
+**/listaClientes.json

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#667eea">
+    <title>Login - CDSuporte</title>
+    <link rel="stylesheet" href="css/login.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fas fa-tools"></i>
+                    <h1>CDSuporte</h1>
+                </div>
+                <p class="subtitle">Sistema de Suporte Técnico</p>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">
+                        <i class="fas fa-user"></i>
+                        Usuário
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        required 
+                        placeholder="Digite seu usuário"
+                        autocomplete="username"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i>
+                        Senha
+                    </label>
+                    <div class="password-input">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            required 
+                            placeholder="Digite sua senha"
+                            autocomplete="current-password"
+                        >
+                        <button type="button" class="toggle-password" onclick="togglePassword()">
+                            <i class="fas fa-eye" id="toggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Entrar
+                </button>
+
+                <div class="login-footer">
+                    <p class="default-credentials">
+                        <i class="fas fa-info-circle"></i>
+                        Credenciais padrão: <strong>admin</strong> / <strong>changepassword</strong>
+                    </p>
+                </div>
+            </form>
+
+            <div id="loginMessage" class="message" style="display: none;"></div>
+        </div>
+
+        <div class="login-background">
+            <div class="bg-shape shape-1"></div>
+            <div class="bg-shape shape-2"></div>
+            <div class="bg-shape shape-3"></div>
+        </div>
+    </div>
+
+    <script src="js/login.js"></script>
+    <script>
+        // 🔧 Forçar funcionalidade dos inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input');
+            
+            inputs.forEach(input => {
+                // Remover atributos que podem bloquear
+                input.removeAttribute('readonly');
+                input.removeAttribute('disabled');
+                
+                // Forçar propriedades CSS
+                input.style.pointerEvents = 'auto';
+                input.style.userSelect = 'text';
+                input.style.cursor = 'text';
+                input.style.zIndex = '1000';
+                input.style.position = 'relative';
+                
+                // Adicionar eventos para garantir foco
+                input.addEventListener('mousedown', function(e) {
+                    e.stopPropagation();
+                    this.focus();
+                });
+                
+                input.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    this.focus();
+                });
+                
+                input.addEventListener('touchstart', function(e) {
+                    e.stopPropagation();
+                    this.focus();
+                });
+            });
+            
+            console.log('✅ Inputs configurados para serem editáveis');
+        });
+    </script>
+</body>
+</html>

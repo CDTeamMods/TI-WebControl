@@ -1,0 +1,720 @@
+/* Ferramentas Styles */
+
+/* Grid de Ferramentas */
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 1rem 0;
+}
+
+.tool-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transition: height 0.3s ease;
+}
+
+.tool-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.tool-card:hover::before {
+    height: 12px;
+}
+
+.tool-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    color: white;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.tool-card:hover .tool-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
+}
+
+.tool-card h3 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.tool-card p {
+    margin: 0 0 1.5rem 0;
+    color: #7f8c8d;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.tool-card .btn {
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.tool-card .btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.tool-card .btn:hover::before {
+    width: 100px;
+    height: 100px;
+}
+
+.tool-card .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+/* Estilos específicos para diferentes tipos de ferramentas */
+.tool-card.tool-network .tool-icon {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    box-shadow: 0 8px 24px rgba(52, 152, 219, 0.3);
+}
+
+.tool-card.tool-network:hover .tool-icon {
+    box-shadow: 0 12px 32px rgba(52, 152, 219, 0.4);
+}
+
+.tool-card.tool-network .btn {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+.tool-card.tool-network .btn:hover {
+    box-shadow: 0 8px 24px rgba(52, 152, 219, 0.4);
+}
+
+.tool-card.tool-system .tool-icon {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    box-shadow: 0 8px 24px rgba(231, 76, 60, 0.3);
+}
+
+.tool-card.tool-system:hover .tool-icon {
+    box-shadow: 0 12px 32px rgba(231, 76, 60, 0.4);
+}
+
+.tool-card.tool-system .btn {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.tool-card.tool-system .btn:hover {
+    box-shadow: 0 8px 24px rgba(231, 76, 60, 0.4);
+}
+
+.tool-card.tool-security .tool-icon {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    box-shadow: 0 8px 24px rgba(243, 156, 18, 0.3);
+}
+
+.tool-card.tool-security:hover .tool-icon {
+    box-shadow: 0 12px 32px rgba(243, 156, 18, 0.4);
+}
+
+.tool-card.tool-security .btn {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+}
+
+.tool-card.tool-security .btn:hover {
+    box-shadow: 0 8px 24px rgba(243, 156, 18, 0.4);
+}
+
+.tool-card.tool-utility .tool-icon {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    box-shadow: 0 8px 24px rgba(39, 174, 96, 0.3);
+}
+
+.tool-card.tool-utility:hover .tool-icon {
+    box-shadow: 0 12px 32px rgba(39, 174, 96, 0.4);
+}
+
+.tool-card.tool-utility .btn {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+}
+
+.tool-card.tool-utility .btn:hover {
+    box-shadow: 0 8px 24px rgba(39, 174, 96, 0.4);
+}
+
+/* Seção de Resultados */
+.tool-results {
+    margin-top: 2rem;
+    padding: 0;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafe 100%);
+    border-radius: 20px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tool-results::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.tool-results h3 {
+    margin: 0;
+    padding: 2rem 2rem 1rem 2rem;
+    color: #2c3e50;
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.tool-results h3::before {
+    content: '📊';
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.2));
+}
+
+.tool-results .result-content {
+    padding: 2rem;
+}
+
+.tool-results pre {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    color: #1e293b;
+    padding: 2rem;
+    border-radius: 16px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    box-shadow: 
+        inset 0 4px 16px rgba(0,0,0,0.05),
+        0 8px 32px rgba(0,0,0,0.08);
+    border: 1px solid #cbd5e1;
+    position: relative;
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.tool-results pre::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #10b981 50%, #3b82f6 75%, #8b5cf6 100%);
+    border-radius: 16px 16px 0 0;
+}
+
+.tool-results pre::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    width: 12px;
+    height: 12px;
+    background: #ef4444;
+    border-radius: 50%;
+    box-shadow: 
+        20px 0 0 #f59e0b,
+        40px 0 0 #10b981;
+}
+
+/* Status Styles com melhor contraste e ícones */
+.tool-results .success {
+    color: #10b981;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(16, 185, 129, 0.2);
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.tool-results .success::before {
+    content: '✅';
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 1rem;
+    filter: drop-shadow(0 1px 2px rgba(16, 185, 129, 0.3));
+}
+
+.tool-results .error {
+    color: #ef4444;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.tool-results .error::before {
+    content: '❌';
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 1rem;
+    filter: drop-shadow(0 1px 2px rgba(239, 68, 68, 0.3));
+}
+
+.tool-results .warning {
+    color: #f59e0b;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(245, 158, 11, 0.2);
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.tool-results .warning::before {
+    content: '⚠️';
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 1rem;
+    filter: drop-shadow(0 1px 2px rgba(245, 158, 11, 0.3));
+}
+
+.tool-results .info {
+    color: #3b82f6;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(59, 130, 246, 0.2);
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.tool-results .info::before {
+    content: 'ℹ️';
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 1rem;
+    filter: drop-shadow(0 1px 2px rgba(59, 130, 246, 0.3));
+}
+
+/* Highlight para dados importantes */
+.tool-results .highlight {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+    color: #1e40af;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 700;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Separadores visuais */
+.tool-results .separator {
+    border-top: 2px solid rgba(102, 126, 234, 0.1);
+    margin: 1rem 0;
+    position: relative;
+}
+
+.tool-results .separator::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+}
+
+/* Loading State */
+.tool-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 3rem 2rem;
+    color: #64748b;
+    font-weight: 600;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    border-radius: 16px;
+    margin: 2rem 0;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.tool-loading .spinner-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tool-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(102, 126, 234, 0.1);
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: modernSpin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    position: relative;
+}
+
+.tool-loading .spinner::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 4px solid transparent;
+    border-top: 4px solid #764ba2;
+    border-radius: 50%;
+    animation: modernSpin 2s cubic-bezier(0.4, 0, 0.2, 1) infinite reverse;
+}
+
+.tool-loading .loading-text {
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.tool-loading .loading-dots {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tool-loading .loading-dots span {
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    animation: loadingDots 1.4s ease-in-out infinite;
+}
+
+.tool-loading .loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.tool-loading .loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes modernSpin {
+    0% { 
+        transform: rotate(0deg);
+        filter: hue-rotate(0deg);
+    }
+    100% { 
+        transform: rotate(360deg);
+        filter: hue-rotate(360deg);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.7;
+        transform: scale(1.05);
+    }
+}
+
+@keyframes loadingDots {
+    0%, 80%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+/* Formulários de Ferramentas */
+.tool-form {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.tool-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.tool-form h3 {
+    margin: 0 0 1.5rem 0;
+    color: #2c3e50;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tool-form .form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.tool-form .form-row .form-group {
+    flex: 1;
+}
+
+.tool-form .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.tool-form .btn-secondary {
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tool-form .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(149, 165, 166, 0.4);
+}
+
+/* Responsividade Ferramentas */
+@media (max-width: 768px) {
+    .tools-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 0.5rem 0;
+    }
+    
+    .tool-card {
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+    
+    .tool-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .tool-card h3 {
+        font-size: 1.2rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .tool-card p {
+        font-size: 0.9rem;
+        margin-bottom: 1.2rem;
+    }
+    
+    .tool-card .btn {
+        padding: 0.9rem 1.2rem;
+        font-size: 0.95rem;
+    }
+    
+    .tool-results {
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        border-radius: 12px;
+    }
+    
+    .tool-results h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1.2rem;
+    }
+    
+    .tool-results pre {
+        padding: 1.2rem;
+        font-size: 0.85rem;
+        border-radius: 10px;
+    }
+    
+    .tool-form {
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .tool-form h3 {
+        font-size: 1.2rem;
+        margin-bottom: 1.2rem;
+    }
+    
+    .tool-form .form-row {
+        flex-direction: column;
+        gap: 0.8rem;
+        margin-bottom: 1.2rem;
+    }
+    
+    .tool-form .form-actions {
+        flex-direction: column;
+        gap: 0.8rem;
+        margin-top: 1.5rem;
+        padding-top: 1.2rem;
+    }
+    
+    .tool-form .btn,
+    .tool-form .btn-secondary {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .tool-card {
+        padding: 1.2rem;
+        border-radius: 10px;
+    }
+    
+    .tool-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.3rem;
+        border-radius: 10px;
+        margin-bottom: 0.8rem;
+    }
+    
+    .tool-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.6rem;
+    }
+    
+    .tool-card p {
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+    
+    .tool-card .btn {
+        padding: 1rem;
+        font-size: 0.9rem;
+        border-radius: 8px;
+    }
+    
+    .tool-results {
+        padding: 1.2rem;
+        border-radius: 10px;
+    }
+    
+    .tool-results h3 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .tool-results pre {
+        padding: 1rem;
+        font-size: 0.8rem;
+        border-radius: 8px;
+    }
+    
+    .tool-form {
+        padding: 1.2rem;
+        border-radius: 10px;
+    }
+    
+    .tool-form h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .tool-form .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .tool-form .form-actions {
+        margin-top: 1.2rem;
+        padding-top: 1rem;
+    }
+    
+    .tool-form .btn,
+    .tool-form .btn-secondary {
+        padding: 1.1rem 1.2rem;
+        font-size: 0.95rem;
+        border-radius: 8px;
+    }
+}

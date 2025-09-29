@@ -46,7 +46,15 @@ Edite o arquivo `.env`:
 
 ```env
 WEBSITE_NAME="TI-WebControl"
-PORT=8080
+IOS_IDENTIFIER=""
+ANDROID_IDENTIFIER="com.tiwebcontrol.suporte"
+UPDATE_MODE="now"
+CONTENT_URL=""
+MIN_NATIVE_INTERFACE=""
+AUTO_DOWNLOAD=true
+AUTO_INSTALL=true
+
+PORT=3000
 ```
 
 ### 4. Gere o arquivo de configuração

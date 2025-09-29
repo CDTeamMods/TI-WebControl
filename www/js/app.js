@@ -1,29 +1,167 @@
-// Sistema de Suporte TI-WebControl
+/**
+ * TIWebControlApp
+ */
+
 class TIWebControlApp {
+
     constructor() {
-        this.atendimentos = JSON.parse(localStorage.getItem('tiwebcontrol_atendimentos')) || [];
-        this.currentSection = 'dashboard';
+        this.atendimentos = [];
+        this.user = null;
         this.init();
     }
 
     async init() {
-        this.setupEventListeners();
-        await this.loadWebsiteName();
-        this.loadDashboard();
-        this.loadAtendimentos();
-        
-        // Verificar se está rodando no Cordova
-        if (window.cordova) {
-            document.addEventListener('deviceready', () => {
-                console.log('📱 Cordova carregado com sucesso!');
-                this.setupMobileFeatures();
-            });
+        try {
+            console.log('🚀 Iniciando aplicação...');
+            
+            // Configurar interface básica
+            this.setupEventListeners();
+            this.setupMobileFeatures();
+            this.setupCreateUserForm();
+            
+            // Carregar dados públicos (que não precisam de autenticação)
+            await this.loadWebsiteName();
+            
+            // Verificar se há token de autenticação
+            const token = localStorage.getItem('authToken');
+            console.log('🔑 Token encontrado:', !!token);
+            
+            if (token) {
+                try {
+                    // Se há token, verificar autenticação e carregar dados protegidos
+                    console.log('🔍 Verificando autenticação...');
+                    await this.checkAuth();
+                    console.log('✅ Autenticação válida');
+                    
+                    this.setupUserInterface();
+                    await this.loadProtectedData();
+                } catch (authError) {
+                    console.error('❌ Erro na autenticação:', authError);
+                    // Token inválido, redirecionar para login
+                    window.location.href = '/login.html';
+                    return;
+                }
+            } else {
+                // Se não há token, redirecionar para login
+                console.log('🔄 Sem token, redirecionando para login');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            console.log('✅ Aplicação inicializada com sucesso');
+        } catch (error) {
+            console.error('❌ Erro ao inicializar aplicação:', error);
+            // Em caso de erro, redirecionar para login
+            window.location.href = '/login.html';
         }
     }
 
+    async checkAuth() {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            throw new Error('Token não encontrado');
+        }
+
+        try {
+            const response = await fetch('/api/auth/verify', {
+                method: 'POST',
+                headers: this.getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                throw new Error('Token inválido');
+            }
+
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Token inválido');
+            }
+            
+            this.user = data.user;
+            return true;
+        } catch (error) {
+            console.error('❌ Erro na verificação de autenticação:', error);
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            throw error;
+        }
+    }
+
+    async loadInitialData() {
+        // Carregar dados iniciais
+        await this.loadWebsiteName();
+        await this.loadEmpresas();
+        await this.loadEmpresasFilter();
+        await this.loadAtendimentos();
+        this.loadDashboard();
+        
+        // Mostrar seção inicial
+        this.showSection('dashboard');
+    }
+
+    async loadProtectedData() {
+        try {
+            // Carregar dados que precisam de autenticação
+            await this.loadEmpresas();
+            await this.loadEmpresasFilter();
+            await this.loadAtendimentos();
+            this.loadDashboard();
+            
+            // Mostrar seção inicial
+            this.showSection('dashboard');
+        } catch (error) {
+            console.error('❌ Erro ao carregar dados protegidos:', error);
+        }
+    }
+
+    setupUserInterface() {
+        // Mostrar informações do usuário na interface
+        const userInfo = document.querySelector('.user-info');
+        if (userInfo && this.user) {
+            const adminBadge = this.user.isLocalAdmin ? ' 🔑' : (this.user.role === 'admin' ? ' 👑' : '');
+            const adminTitle = this.user.isLocalAdmin ? 'Admin Local' : (this.user.role === 'admin' ? 'Administrador' : 'Usuário');
+            
+            userInfo.innerHTML = `
+                <span class="user-name" title="${adminTitle}">👤 ${this.user.username}${adminBadge}</span>
+                <button onclick="logout()" class="logout-btn" title="Sair">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            `;
+        }
+
+        // Mostrar aba "Criar Usuário" apenas para usuários locais
+        const criarUsuarioTab = document.getElementById('nav-criar-usuario');
+        if (criarUsuarioTab) {
+            if (this.user && this.user.isLocalAdmin) {
+                criarUsuarioTab.style.display = 'block';
+            } else {
+                criarUsuarioTab.style.display = 'none';
+            }
+        }
+    }
+
+    getAuthHeaders() {
+        const token = localStorage.getItem('authToken');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+    }
+
     setupEventListeners() {
+        // Debug global para cliques no FAB
+        document.addEventListener('click', (e) => {
+            console.log('🌍 [DEBUG] Clique global detectado em:', e.target);
+            if (e.target.closest('#fab-create-ticket')) {
+                console.log('🎯 [DEBUG] *** CLIQUE NO FAB DETECTADO VIA LISTENER GLOBAL! ***');
+            }
+        });
+        
         // Menu mobile hambúrguer
         this.setupMobileMenu();
+        
+        // Botão flutuante (FAB) para criar ticket
+        this.setupFloatingActionButton();
         
         // Navegação
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -47,6 +185,7 @@ class TIWebControlApp {
         // Filtros de atendimentos
         const filterStatus = document.getElementById('filter-status');
         const filterPriority = document.getElementById('filter-priority');
+        const filterEmpresa = document.getElementById('filter-empresa');
         
         if (filterStatus) {
             filterStatus.addEventListener('change', () => this.filterAtendimentos());
@@ -54,6 +193,28 @@ class TIWebControlApp {
         
         if (filterPriority) {
             filterPriority.addEventListener('change', () => this.filterAtendimentos());
+        }
+        
+        if (filterEmpresa) {
+            filterEmpresa.addEventListener('change', () => this.filterAtendimentos());
+        }
+
+        // Dropdown de cliente
+        const clienteSelect = document.getElementById('cliente');
+        if (clienteSelect) {
+            clienteSelect.addEventListener('change', (e) => this.handleClienteChange(e));
+        }
+
+        // Dropdown de problema
+        const problemaSelect = document.getElementById('problema');
+        if (problemaSelect) {
+            problemaSelect.addEventListener('change', (e) => this.handleProblemaChange(e));
+        }
+
+        // Dropdown de empresa
+        const empresaSelect = document.getElementById('empresa');
+        if (empresaSelect) {
+            empresaSelect.addEventListener('change', (e) => this.handleEmpresaChange(e));
         }
     }
 
@@ -163,30 +324,233 @@ class TIWebControlApp {
     async loadWebsiteName() {
         try {
             const response = await fetch('/api/config');
-            const config = await response.json();
-            
-            // Atualizar o título da página
-            document.title = config.websiteName;
-            
-            // Atualizar o título no cabeçalho se existir
-            const headerTitle = document.querySelector('.header h1');
-            if (headerTitle) {
-                headerTitle.textContent = config.websiteName;
+            if (response.ok) {
+                const data = await response.json();
+                const titleElement = document.querySelector('title');
+                const headerTitle = document.querySelector('h1');
+                
+                if (titleElement) titleElement.textContent = data.websiteName;
+                if (headerTitle) headerTitle.textContent = data.websiteName;
+            } else {
+                console.warn('⚠️ Não foi possível carregar o nome do website');
             }
         } catch (error) {
-            console.error('❌ Erro ao carregar configurações:', error);
-            // Usar título padrão em caso de erro
-            document.title = 'Sistema de Atendimento';
+            console.warn('⚠️ Erro ao carregar nome do website:', error);
+            // Usar nome padrão se houver erro
+            const titleElement = document.querySelector('title');
+            const headerTitle = document.querySelector('h1');
+            
+            if (titleElement) titleElement.textContent = 'CDSuporte';
+            if (headerTitle) headerTitle.textContent = 'CDSuporte';
+        }
+    }
+
+    async loadClientes(empresaSelecionada = null) {
+        try {
+            const response = await fetch('/res/json/listaClientes.json');
+            if (response.ok) {
+                const data = await response.json();
+                let clientes = [];
+                
+                if (empresaSelecionada) {
+                    // Encontrar a empresa específica e seus clientes
+                    const empresaData = data.find(item => item.empresa === empresaSelecionada);
+                    if (empresaData) {
+                        clientes = empresaData.clientes;
+                    }
+                } else {
+                    // Se nenhuma empresa for especificada, carregar todos os clientes
+                    clientes = data.flatMap(item => item.clientes);
+                }
+                
+                this.populateClienteDropdown(clientes);
+            } else {
+                console.warn('⚠️ Não foi possível carregar a lista de clientes');
+                this.populateClienteDropdown(['Cliente não encontrado']);
+            }
+        } catch (error) {
+            console.warn('⚠️ Erro ao carregar lista de clientes:', error);
+            this.populateClienteDropdown(['Erro ao carregar clientes']);
+        }
+    }
+
+    populateClienteDropdown(clientes) {
+        const clienteSelect = document.getElementById('cliente');
+        if (!clienteSelect) return;
+
+        // Limpar opções existentes (exceto a primeira)
+        clienteSelect.innerHTML = '<option value="">Selecione o cliente</option>';
+
+        // Adicionar opções dos clientes
+        clientes.forEach(cliente => {
+            const option = document.createElement('option');
+            option.value = cliente;
+            option.textContent = cliente;
+            clienteSelect.appendChild(option);
+        });
+
+        // Adicionar opção para "Outro" no final
+        const optionOutro = document.createElement('option');
+        optionOutro.value = 'outro';
+        optionOutro.textContent = '➕ Outro (especificar)';
+        clienteSelect.appendChild(optionOutro);
+
+        console.log(`✅ ${clientes.length} clientes carregados no dropdown`);
+    }
+
+    async loadEmpresas() {
+        try {
+            const response = await fetch('/res/json/listaClientes.json');
+            if (response.ok) {
+                const data = await response.json();
+                // Extrair apenas os nomes das empresas
+                const empresas = data.map(item => item.empresa);
+                this.populateEmpresaDropdown(empresas);
+                // Armazenar dados completos para uso posterior
+                this.empresasData = data;
+            } else {
+                console.warn('⚠️ Não foi possível carregar a lista de empresas');
+            }
+        } catch (error) {
+            console.warn('⚠️ Erro ao carregar lista de empresas:', error);
+        }
+    }
+
+    populateEmpresaDropdown(empresas) {
+        const empresaSelect = document.getElementById('empresa');
+        if (!empresaSelect) return;
+
+        // Limpar opções existentes (exceto a primeira)
+        empresaSelect.innerHTML = '<option value="">Selecione a empresa</option>';
+
+        // Adicionar opções das empresas
+        empresas.forEach(empresa => {
+            const option = document.createElement('option');
+            option.value = empresa;
+            option.textContent = empresa;
+            empresaSelect.appendChild(option);
+        });
+
+        // Adicionar opção "Outro"
+        const outroOption = document.createElement('option');
+        outroOption.value = 'outro';
+        outroOption.textContent = 'Outro (especificar)';
+        empresaSelect.appendChild(outroOption);
+
+        console.log(`✅ ${empresas.length} empresas carregadas no dropdown`);
+    }
+
+    async loadEmpresasFilter() {
+        try {
+            const response = await fetch('/res/json/listaClientes.json');
+            if (response.ok) {
+                const data = await response.json();
+                // Extrair apenas os nomes das empresas
+                const empresas = data.map(item => item.empresa);
+                this.populateEmpresaFilter(empresas);
+            } else {
+                console.warn('⚠️ Não foi possível carregar a lista de empresas para o filtro');
+            }
+        } catch (error) {
+            console.warn('⚠️ Erro ao carregar lista de empresas para o filtro:', error);
+        }
+    }
+
+    populateEmpresaFilter(empresas) {
+        const empresaSelect = document.getElementById('filter-empresa');
+        if (!empresaSelect) return;
+
+        // Limpar opções existentes (exceto a primeira)
+        empresaSelect.innerHTML = '<option value="">Todas as Empresas</option>';
+
+        // Adicionar opções das empresas
+        empresas.forEach(empresa => {
+            const option = document.createElement('option');
+            option.value = empresa;
+            option.textContent = empresa;
+            empresaSelect.appendChild(option);
+        });
+    }
+
+    handleClienteChange(event) {
+        const clienteCustom = document.getElementById('cliente-custom');
+        if (!clienteCustom) return;
+
+        if (event.target.value === 'outro') {
+            clienteCustom.style.display = 'block';
+            clienteCustom.required = true;
+            clienteCustom.focus();
+        } else {
+            clienteCustom.style.display = 'none';
+            clienteCustom.required = false;
+            clienteCustom.value = '';
+        }
+    }
+
+    handleProblemaChange(event) {
+        const selectedValue = event.target.value;
+        const customField = document.getElementById('problema-custom');
+        
+        if (selectedValue === 'outro') {
+            customField.style.display = 'block';
+            customField.required = true;
+        } else {
+            customField.style.display = 'none';
+            customField.required = false;
+            customField.value = '';
+        }
+    }
+
+    handleEmpresaChange(event) {
+        const selectedValue = event.target.value;
+        const customField = document.getElementById('empresa-custom');
+        const clienteSelect = document.getElementById('cliente');
+        
+        if (selectedValue === 'outro') {
+            customField.style.display = 'block';
+            customField.required = true;
+            // Habilitar campo cliente e carregar todos os clientes quando "Outro" for selecionado
+            clienteSelect.disabled = false;
+            clienteSelect.innerHTML = '<option value="">Selecione o cliente</option>';
+            this.loadClientes();
+        } else {
+            customField.style.display = 'none';
+            customField.required = false;
+            customField.value = '';
+            
+            if (selectedValue) {
+                // Habilitar campo cliente e carregar clientes da empresa selecionada
+                clienteSelect.disabled = false;
+                clienteSelect.innerHTML = '<option value="">Selecione o cliente</option>';
+                this.loadClientes(selectedValue);
+            } else {
+                // Se nenhuma empresa for selecionada, desabilitar o dropdown de clientes
+                clienteSelect.disabled = true;
+                clienteSelect.innerHTML = '<option value="">Primeiro selecione uma empresa</option>';
+                this.populateClienteDropdown([]);
+            }
         }
     }
 
     loadDashboard() {
+        // Garantir que this.atendimentos seja um array válido
+        if (!Array.isArray(this.atendimentos)) {
+            console.warn('loadDashboard: this.atendimentos não é um array, inicializando como array vazio');
+            this.atendimentos = [];
+        }
+
         const totalAtendimentos = this.atendimentos.filter(a => a.status !== 'resolvido').length;
         const urgentAtendimentos = this.atendimentos.filter(a => a.prioridade === 'urgente' && a.status !== 'resolvido').length;
         const completedToday = this.atendimentos.filter(a => {
+            if (a.status !== 'resolvido' || !a.dataResolucao) return false;
+            
             const today = new Date().toDateString();
-            const atendimentoDate = new Date(a.dataResolucao || '').toDateString();
-            return a.status === 'resolvido' && atendimentoDate === today;
+            const resolucaoDate = new Date(a.dataResolucao);
+            
+            // Verificar se a data de resolução é válida
+            if (isNaN(resolucaoDate.getTime())) return false;
+            
+            return resolucaoDate.toDateString() === today;
         }).length;
 
         // Atualizar estatísticas
@@ -194,71 +558,368 @@ class TIWebControlApp {
         document.getElementById('urgent-atendimentos').textContent = urgentAtendimentos;
         document.getElementById('completed-atendimentos').textContent = completedToday;
 
-        // Carregar atividade recente
+        // Carregar atividade recente e atendimentos atrasados
         this.loadRecentActivity();
+        this.loadOverdueActivity();
     }
 
     loadRecentActivity() {
         const activityList = document.getElementById('activity-list');
         if (!activityList) return;
 
+        // Garantir que this.atendimentos seja um array válido
+        if (!Array.isArray(this.atendimentos)) {
+            console.warn('loadRecentActivity: this.atendimentos não é um array, inicializando como array vazio');
+            this.atendimentos = [];
+        }
+
+        // Obter data atual (início do dia)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Obter final do dia atual
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
+        // Filtrar apenas atendimentos não resolvidos do dia atual
         const recentAtendimentos = this.atendimentos
-            .sort((a, b) => new Date(b.dataCriacao) - new Date(a.dataCriacao))
+            .filter(atendimento => {
+                // Verificar se o status não é "resolvido" ou "concluído"
+                const status = (atendimento.status || '').toLowerCase();
+                const isNotResolved = !['resolvido', 'concluído', 'finalizado', 'fechado'].includes(status);
+                
+                if (!isNotResolved) return false;
+
+                // Verificar se foi criado hoje
+                const getValidDate = (atendimento) => {
+                    const possibleDates = [
+                        atendimento.dataCriacao,
+                        atendimento.created_at,
+                        atendimento.createdAt
+                    ];
+                    
+                    for (const dateStr of possibleDates) {
+                        if (dateStr) {
+                            const date = new Date(dateStr);
+                            if (!isNaN(date.getTime())) {
+                                return date;
+                            }
+                        }
+                    }
+                    
+                    return null;
+                };
+
+                const createdDate = getValidDate(atendimento);
+                if (!createdDate) return false;
+
+                // Verificar se foi criado hoje
+                return createdDate >= today && createdDate <= endOfToday;
+            })
+            .sort((a, b) => {
+                const getValidDate = (atendimento) => {
+                    const possibleDates = [
+                        atendimento.dataCriacao,
+                        atendimento.created_at,
+                        atendimento.createdAt
+                    ];
+                    
+                    for (const dateStr of possibleDates) {
+                        if (dateStr) {
+                            const date = new Date(dateStr);
+                            if (!isNaN(date.getTime())) {
+                                return date;
+                            }
+                        }
+                    }
+                    
+                    return new Date();
+                };
+                
+                const dateA = getValidDate(a);
+                const dateB = getValidDate(b);
+                
+                return dateB - dateA;
+            })
             .slice(0, 5);
 
         if (recentAtendimentos.length === 0) {
-            activityList.innerHTML = '<p style="color: #7f8c8d; text-align: center;">Nenhuma atividade recente</p>';
+            activityList.innerHTML = '<div class="activity-empty">📭 Nenhuma atividade recente de hoje</div>';
             return;
         }
 
-        activityList.innerHTML = recentAtendimentos.map(atendimento => `
-            <div class="activity-item">
-                <strong>${atendimento.cliente}</strong> - ${atendimento.problema}
-                <br>
-                <small style="color: #7f8c8d;">
-                    ${this.formatDate(atendimento.dataCriacao)} - 
-                    <span class="priority-${atendimento.prioridade}">${atendimento.prioridade.toUpperCase()}</span>
-                </small>
-            </div>
-        `).join('');
+        activityList.innerHTML = recentAtendimentos.map(atendimento => {
+            // Garantir que temos uma data válida para exibição
+            const getDisplayDate = (atendimento) => {
+                const possibleDates = [
+                    atendimento.dataCriacao,
+                    atendimento.created_at,
+                    atendimento.createdAt
+                ];
+                
+                for (const dateStr of possibleDates) {
+                    if (dateStr) {
+                        const date = new Date(dateStr);
+                        if (!isNaN(date.getTime())) {
+                            return this.formatDate(dateStr);
+                        }
+                    }
+                }
+                
+                return 'Agora mesmo';
+            };
+
+            return `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        ${this.getStatusIcon(atendimento.status)}
+                    </div>
+                    <div class="activity-item-content">
+                        <div class="activity-details">
+                            <div class="activity-title">
+                                <strong>👤 ${atendimento.cliente || 'Cliente não informado'}</strong>
+                            </div>
+                            <div class="activity-description">
+                                🏢 ${atendimento.empresa || 'Empresa não informada'} • 🔧 ${this.formatProblema(atendimento.problema)}
+                            </div>
+                        </div>
+                        <div class="activity-time">
+                            ⏰ ${getDisplayDate(atendimento)}
+                        </div>
+                        <div class="activity-priority priority-${atendimento.prioridade || 'media'}">
+                            ${this.getPriorityIcon(atendimento.prioridade)} ${(atendimento.prioridade || 'media').toUpperCase()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
-    createAtendimento() {
+    loadOverdueActivity() {
+        const overdueList = document.getElementById('overdue-list');
+        if (!overdueList) return;
+
+        // Garantir que this.atendimentos seja um array válido
+        if (!Array.isArray(this.atendimentos)) {
+            this.atendimentos = [];
+        }
+
+        // Obter data atual (início do dia)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Filtrar atendimentos em andamento de dias anteriores (atrasados)
+        const overdueAtendimentos = this.atendimentos
+            .filter(atendimento => {
+                // Verificar se o status é "em andamento" ou similar
+                const status = (atendimento.status || '').toLowerCase();
+                const isInProgress = ['em andamento', 'pendente', 'aberto', 'aguardando'].includes(status);
+                
+                if (!isInProgress) return false;
+
+                // Verificar se foi criado antes de hoje
+                const getValidDate = (atendimento) => {
+                    const possibleDates = [
+                        atendimento.dataCriacao,
+                        atendimento.created_at,
+                        atendimento.createdAt
+                    ];
+                    
+                    for (const dateStr of possibleDates) {
+                        if (dateStr) {
+                            const date = new Date(dateStr);
+                            if (!isNaN(date.getTime())) {
+                                return date;
+                            }
+                        }
+                    }
+                    
+                    return null;
+                };
+
+                const createdDate = getValidDate(atendimento);
+                if (!createdDate) return false;
+
+                // Verificar se foi criado antes de hoje
+                return createdDate < today;
+            })
+            .sort((a, b) => {
+                const getValidDate = (atendimento) => {
+                    const possibleDates = [
+                        atendimento.dataCriacao,
+                        atendimento.created_at,
+                        atendimento.createdAt
+                    ];
+                    
+                    for (const dateStr of possibleDates) {
+                        if (dateStr) {
+                            const date = new Date(dateStr);
+                            if (!isNaN(date.getTime())) {
+                                return date;
+                            }
+                        }
+                    }
+                    
+                    return new Date();
+                };
+                
+                const dateA = getValidDate(a);
+                const dateB = getValidDate(b);
+                
+                // Ordenar do mais antigo para o mais recente (priorizar mais atrasados)
+                return dateA - dateB;
+            })
+            .slice(0, 5);
+
+        if (overdueAtendimentos.length === 0) {
+            overdueList.innerHTML = '<div class="activity-empty">✅ Nenhum atendimento atrasado</div>';
+            return;
+        }
+
+        overdueList.innerHTML = overdueAtendimentos.map(atendimento => {
+            // Calcular quantos dias está atrasado
+            const getValidDate = (atendimento) => {
+                const possibleDates = [
+                    atendimento.dataCriacao,
+                    atendimento.created_at,
+                    atendimento.createdAt
+                ];
+                
+                for (const dateStr of possibleDates) {
+                    if (dateStr) {
+                        const date = new Date(dateStr);
+                        if (!isNaN(date.getTime())) {
+                            return date;
+                        }
+                    }
+                }
+                
+                return new Date();
+            };
+
+            const createdDate = getValidDate(atendimento);
+            const daysDiff = Math.floor((today - createdDate) / (1000 * 60 * 60 * 24));
+            const daysText = daysDiff === 1 ? '1 dia' : `${daysDiff} dias`;
+
+            return `
+                <div class="activity-item overdue-item">
+                    <div class="activity-icon">
+                        ⚠️
+                    </div>
+                    <div class="activity-item-content">
+                        <div class="activity-details">
+                            <div class="activity-title">
+                                <strong>👤 ${atendimento.cliente || 'Cliente não informado'}</strong>
+                                <span class="overdue-badge">🕐 ${daysText} atrasado</span>
+                            </div>
+                            <div class="activity-description">
+                                🏢 ${atendimento.empresa || 'Empresa não informada'} • 🔧 ${this.formatProblema(atendimento.problema)}
+                            </div>
+                        </div>
+                        <div class="activity-time">
+                            📅 ${this.formatDate(createdDate)}
+                        </div>
+                        <div class="activity-priority priority-${atendimento.prioridade || 'media'}">
+                            ${this.getPriorityIcon(atendimento.prioridade)} ${(atendimento.prioridade || 'media').toUpperCase()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async createAtendimento() {
         const form = document.getElementById('atendimento-form');
         const formData = new FormData(form);
         
+        // Determinar o cliente correto (dropdown ou campo personalizado)
+        let clienteValue = formData.get('cliente');
+        if (clienteValue === 'outro') {
+            clienteValue = formData.get('cliente-custom');
+        }
+        
+        // Determinar a empresa correta (dropdown ou campo personalizado)
+        let empresaValue = formData.get('empresa');
+        if (empresaValue === 'outro') {
+            empresaValue = formData.get('empresa-custom');
+        }
+        
+        // Determinar o problema correto (dropdown ou campo personalizado)
+        let problemaValue = formData.get('problema');
+        if (problemaValue === 'outro') {
+            problemaValue = formData.get('problema-custom');
+        }
+        
         const atendimento = {
-            id: Date.now().toString(),
-            cliente: formData.get('cliente'),
-            problema: formData.get('problema'),
+            cliente: clienteValue,
+            empresa: empresaValue,
+            problema: problemaValue,
             prioridade: formData.get('prioridade'),
             descricao: formData.get('descricao'),
-            status: 'aberto',
+            status: 'resolvido',
             dataCriacao: new Date().toISOString(),
             dataResolucao: null
         };
 
-        this.atendimentos.push(atendimento);
-        this.saveAtendimentos();
-        
-        // Mostrar mensagem de sucesso
-        this.showNotification('✅ Atendimento criado com sucesso!', 'success');
-        
-        // Limpar formulário
-        form.reset();
-        
-        // Voltar para dashboard
-        this.showSection('dashboard');
-        
-        // Vibrar no mobile se disponível
-        if (navigator.vibrate) {
-            navigator.vibrate(200);
+        try {
+            const response = await fetch('/api/atendimento', {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify(atendimento)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                // Mostrar mensagem de sucesso antes da atualização
+                this.showNotification('✅ Atendimento criado com sucesso! Atualizando página...', 'success');
+                
+                // Vibrar no mobile se disponível
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+                
+                // Aguardar um pouco para mostrar a mensagem
+                setTimeout(() => {
+                    // Atualizar a página inteira para garantir sincronização completa
+                    window.location.reload(true); // true força reload do servidor
+                }, 1500);
+            } else {
+                throw new Error('Erro ao criar atendimento');
+            }
+        } catch (error) {
+            console.error('Erro ao criar atendimento:', error);
+            this.showNotification('❌ Erro ao criar atendimento. Tente novamente.', 'error');
         }
     }
 
-    loadAtendimentos() {
+    async loadAtendimentos() {
         const atendimentosList = document.getElementById('atendimentos-list');
         if (!atendimentosList) return;
+
+        try {
+            const response = await fetch('/api/atendimentos', {
+                headers: this.getAuthHeaders()
+            });
+
+            if (response.ok) {
+                const atendimentos = await response.json();
+                // Garantir que sempre seja um array
+                this.atendimentos = Array.isArray(atendimentos) ? atendimentos : [];
+                this.saveAtendimentos(); // Salvar no localStorage como backup
+            } else {
+                console.warn('Erro ao carregar atendimentos da API, usando dados locais');
+            }
+        } catch (error) {
+            console.error('Erro ao carregar atendimentos:', error);
+            console.warn('Usando dados locais como fallback');
+        }
+
+        // Garantir que atendimentos sempre seja um array antes de usar
+        if (!Array.isArray(this.atendimentos)) {
+            console.warn('Atendimentos não é um array, inicializando como array vazio');
+            this.atendimentos = [];
+        }
 
         if (this.atendimentos.length === 0) {
             atendimentosList.innerHTML = `
@@ -277,81 +938,250 @@ class TIWebControlApp {
     renderAtendimentos(atendimentos) {
         const atendimentosList = document.getElementById('atendimentos-list');
         
-        atendimentosList.innerHTML = atendimentos.map(atendimento => `
+        // Garantir que atendimentos seja um array válido
+        if (!Array.isArray(atendimentos)) {
+            console.warn('renderAtendimentos: parâmetro não é um array, usando array vazio');
+            atendimentos = [];
+        }
+        
+        if (atendimentos.length === 0) {
+            atendimentosList.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #7f8c8d;">
+                    <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p>Nenhum atendimento encontrado</p>
+                    <p>Crie seu primeiro atendimento para começar!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        atendimentosList.innerHTML = atendimentos.map(atendimento => {
+            const statusIcon = this.getStatusIcon(atendimento.status);
+            const priorityIcon = this.getPriorityIcon(atendimento.prioridade);
+            
+            return `
             <div class="atendimento-item">
                 <div class="atendimento-header">
                     <div>
                         <span class="atendimento-id">#${atendimento.id}</span>
-                        <h4>${atendimento.cliente}</h4>
+                        <h4>${priorityIcon} ${atendimento.cliente}</h4>
                     </div>
                     <span class="atendimento-priority priority-${atendimento.prioridade}">
                         ${atendimento.prioridade}
                     </span>
                 </div>
                 <div class="atendimento-content">
-                    <p><strong>Problema:</strong> ${atendimento.problema}</p>
-                    <p><strong>Descrição:</strong> ${atendimento.descricao}</p>
-                    <p><strong>Status:</strong> ${atendimento.status}</p>
-                    <p><strong>Data:</strong> ${this.formatDate(atendimento.dataCriacao)}</p>
+                    ${atendimento.empresa ? `<p><strong>🏢 Empresa:</strong> <span class="empresa-info">${atendimento.empresa}</span></p>` : ''}
+                    <p><strong>🔧 Problema:</strong> <span class="problema-${this.getProblemaClass(atendimento.problema)}">${this.formatProblema(atendimento.problema)}</span></p>
+                    <p><strong>📝 Descrição:</strong> ${atendimento.descricao}</p>
+                    <p><strong>📊 Status:</strong> 
+                        <span class="atendimento-status status-${atendimento.status}">
+                            ${statusIcon} ${this.formatStatus(atendimento.status)}
+                        </span>
+                    </p>
+                    <p><strong>📅 Data:</strong> ${this.formatDate(atendimento.dataCriacao)}</p>
                 </div>
-                <div class="atendimento-actions" style="margin-top: 1rem;">
+                <div class="atendimento-actions">
                     ${atendimento.status !== 'resolvido' ? `
-                        <button onclick="app.updateAtendimentoStatus('${atendimento.id}', 'em-andamento')" 
-                                class="btn-action" style="background: #f39c12; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin-right: 0.5rem; cursor: pointer;">
-                            Em Andamento
-                        </button>
                         <button onclick="app.updateAtendimentoStatus('${atendimento.id}', 'resolvido')" 
-                                class="btn-action" style="background: #27ae60; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin-right: 0.5rem; cursor: pointer;">
-                            Resolver
+                                class="btn-action" style="background: linear-gradient(135deg, #95e1d3 0%, #6c5ce7 100%); color: white; box-shadow: 0 4px 12px rgba(149, 225, 211, 0.3);">
+                            ✅ Resolver
                         </button>
                     ` : ''}
                     <button onclick="app.deleteAtendimento('${atendimento.id}')" 
-                            class="btn-action" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
-                        Excluir
+                            class="btn-action" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);">
+                        🗑️ Excluir
                     </button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
+    }
+
+    getStatusIcon(status) {
+        const icons = {
+            'resolvido': '✅',
+            'em andamento': '',
+            'pendente': '',
+            'aberto': ''
+        };
+        return icons[status] || '';
+    }
+
+    getPriorityIcon(prioridade) {
+        const icons = {
+            'baixa': '🟢',
+            'media': '🟡',
+            'alta': '🟠',
+            'urgente': '🔴'
+        };
+        return icons[prioridade] || '⚪';
+    }
+
+    formatStatus(status) {
+        // Verificar se status é válido
+        if (!status || typeof status !== 'string') {
+            return 'Pendente';
+        }
+        
+        const statusMap = {
+            'pendente': 'Pendente',
+            'resolvido': 'Resolvido',
+            'em andamento': 'Em Andamento',
+            'aberto': 'Aberto'
+        };
+        return statusMap[status] || status;
+    }
+
+    formatProblema(problema) {
+        // Verificar se problema é válido
+        if (!problema || typeof problema !== 'string') {
+            return 'NÃO INFORMADO';
+        }
+        return problema.toUpperCase();
+    }
+
+    getProblemaClass(problema) {
+        // Verificar se problema é válido
+        if (!problema || typeof problema !== 'string') {
+            return 'outro';
+        }
+        
+        const problemaLower = problema.toLowerCase();
+        const classMap = {
+            'hardware': 'hardware',
+            'software': 'software',
+            'rede': 'rede',
+            'rede/internet': 'rede',
+            'email': 'email',
+            'e-mail': 'email',
+            'impressora': 'impressora',
+            'sistema': 'sistema',
+            'sistema operacional': 'sistema',
+            'backup': 'backup',
+            'backup/recuperação': 'backup'
+        };
+        return classMap[problemaLower] || 'outro';
     }
 
     filterAtendimentos() {
         const statusFilter = document.getElementById('filter-status').value;
         const priorityFilter = document.getElementById('filter-priority').value;
+        const empresaFilter = document.getElementById('filter-empresa').value;
+        
+        console.log('🔍 Filtrando atendimentos:', { statusFilter, priorityFilter, empresaFilter });
+        
+        // Garantir que this.atendimentos seja um array válido
+        if (!Array.isArray(this.atendimentos)) {
+            console.warn('filterAtendimentos: this.atendimentos não é um array, inicializando como array vazio');
+            this.atendimentos = [];
+        }
+        
+        console.log('📊 Total de atendimentos:', this.atendimentos.length);
         
         let filteredAtendimentos = this.atendimentos;
         
         if (statusFilter) {
-            filteredAtendimentos = filteredAtendimentos.filter(atendimento => atendimento.status === statusFilter);
+            filteredAtendimentos = filteredAtendimentos.filter(atendimento => {
+                const match = atendimento.status && atendimento.status.toLowerCase() === statusFilter.toLowerCase();
+                if (!match) {
+                    console.log('❌ Status não corresponde:', atendimento.status, 'vs', statusFilter);
+                }
+                return match;
+            });
+            console.log('📋 Após filtro de status:', filteredAtendimentos.length);
         }
         
         if (priorityFilter) {
-            filteredAtendimentos = filteredAtendimentos.filter(atendimento => atendimento.prioridade === priorityFilter);
+            filteredAtendimentos = filteredAtendimentos.filter(atendimento => {
+                const match = atendimento.prioridade && atendimento.prioridade.toLowerCase() === priorityFilter.toLowerCase();
+                return match;
+            });
+            console.log('⚡ Após filtro de prioridade:', filteredAtendimentos.length);
         }
         
+        if (empresaFilter) {
+            filteredAtendimentos = filteredAtendimentos.filter(atendimento => {
+                const match = atendimento.empresa === empresaFilter;
+                if (!match) {
+                    console.log('❌ Empresa não corresponde:', atendimento.empresa, 'vs', empresaFilter);
+                }
+                return match;
+            });
+            console.log('🏢 Após filtro de empresa:', filteredAtendimentos.length);
+        }
+        
+        console.log('✅ Resultado final da filtragem:', filteredAtendimentos.length);
         this.renderAtendimentos(filteredAtendimentos);
     }
 
-    updateAtendimentoStatus(atendimentoId, newStatus) {
-        const atendimento = this.atendimentos.find(a => a.id === atendimentoId);
-        if (atendimento) {
-            atendimento.status = newStatus;
+    async updateAtendimentoStatus(atendimentoId, newStatus) {
+        try {
+            const dadosAtualizacao = {
+                status: newStatus
+            };
+            
             if (newStatus === 'resolvido') {
-                atendimento.dataResolucao = new Date().toISOString();
+                dadosAtualizacao.dataResolucao = new Date().toISOString();
             }
-            this.saveAtendimentos();
-            this.loadAtendimentos();
-            this.loadDashboard();
-            this.showNotification(`✅ Atendimento ${newStatus}!`, 'success');
+
+            const response = await fetch(`/api/atendimento/${atendimentoId}`, {
+                method: 'PUT',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify(dadosAtualizacao)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                // Atualizar o cache local
+                const atendimento = this.atendimentos.find(a => a.id === atendimentoId);
+                if (atendimento) {
+                    atendimento.status = newStatus;
+                    if (newStatus === 'resolvido') {
+                        atendimento.dataResolucao = dadosAtualizacao.dataResolucao;
+                    }
+                    this.saveAtendimentos();
+                }
+                
+                // Recarregar dados
+                await this.loadAtendimentos();
+                this.loadDashboard();
+                this.showNotification(`✅ Atendimento ${newStatus}!`, 'success');
+            } else {
+                throw new Error('Erro ao atualizar status do atendimento');
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar status:', error);
+            this.showNotification('❌ Erro ao atualizar status. Tente novamente.', 'error');
         }
     }
 
-    deleteAtendimento(atendimentoId) {
+    async deleteAtendimento(atendimentoId) {
         if (confirm('Tem certeza que deseja excluir este atendimento?')) {
-            this.atendimentos = this.atendimentos.filter(a => a.id !== atendimentoId);
-            this.saveAtendimentos();
-            this.loadAtendimentos();
-            this.loadDashboard();
-            this.showNotification('🗑️ Atendimento excluído!', 'info');
+            try {
+                const response = await fetch(`/api/atendimento/${atendimentoId}`, {
+                    method: 'DELETE',
+                    headers: this.getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    // Remover do cache local
+                    if (Array.isArray(this.atendimentos)) {
+                        this.atendimentos = this.atendimentos.filter(a => a.id !== atendimentoId);
+                        this.saveAtendimentos();
+                    }
+                    
+                    // Recarregar dados
+                    await this.loadAtendimentos();
+                    this.loadDashboard();
+                    this.showNotification('🗑️ Atendimento excluído com sucesso!', 'success');
+                } else {
+                    throw new Error('Erro ao excluir atendimento');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir atendimento:', error);
+                this.showNotification('❌ Erro ao excluir atendimento. Tente novamente.', 'error');
+            }
         }
     }
 
@@ -360,11 +1190,70 @@ class TIWebControlApp {
     }
 
     formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        if (!dateString || dateString === 'undefined' || dateString === 'null') {
+            return 'Data não informada';
+        }
+        
+        try {
+            let date;
+            
+            // Tentar diferentes formatos de data
+            if (typeof dateString === 'string') {
+                // Se for uma string ISO (formato padrão do banco)
+                if (dateString.includes('T') || dateString.includes('Z')) {
+                    date = new Date(dateString);
+                }
+                // Se for uma data no formato brasileiro (dd/mm/yyyy)
+                else if (dateString.includes('/')) {
+                    const parts = dateString.split(' ')[0].split('/');
+                    if (parts.length === 3) {
+                        // Converter dd/mm/yyyy para yyyy-mm-dd
+                        const [day, month, year] = parts;
+                        date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                    } else {
+                        date = new Date(dateString);
+                    }
+                }
+                // Se for uma data no formato ISO sem T (yyyy-mm-dd)
+                else if (dateString.includes('-')) {
+                    date = new Date(dateString);
+                }
+                // Se for um timestamp numérico
+                else if (!isNaN(dateString)) {
+                    const timestamp = parseInt(dateString);
+                    date = new Date(timestamp);
+                }
+                // Fallback para outros formatos
+                else {
+                    date = new Date(dateString);
+                }
+            } else if (typeof dateString === 'number') {
+                date = new Date(dateString);
+            } else {
+                date = new Date(dateString);
+            }
+            
+            // Verificar se a data é válida
+            if (isNaN(date.getTime())) {
+                console.warn('Data inválida detectada:', dateString);
+                return 'Data não informada';
+            }
+            
+            // Verificar se a data não é muito antiga (antes de 1970) ou muito futura
+            const year = date.getFullYear();
+            if (year < 1970 || year > 2100) {
+                console.warn('Data fora do intervalo válido:', dateString, 'Ano:', year);
+                return 'Data não informada';
+            }
+            
+            return date.toLocaleDateString('pt-BR') + ' às ' + date.toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            console.warn('Erro ao formatar data:', dateString, error);
+            return 'Data não informada';
+        }
     }
 
     showNotification(message, type = 'info') {
@@ -416,7 +1305,9 @@ class TIWebControlApp {
         try {
             this.showNotification('📊 Gerando arquivo Excel...', 'info');
             
-            const response = await fetch('/api/atendimentos/export');
+            const response = await fetch('/api/atendimentos/export', {
+                headers: this.getAuthHeaders()
+            });
             
             if (!response.ok) {
                 throw new Error('Erro ao gerar arquivo Excel');
@@ -457,7 +1348,14 @@ class TIWebControlApp {
         if (toolOutput) {
             toolOutput.innerHTML = `
                 <h4>💻 Informações do Sistema</h4>
-                <div class="loading">🔄 Carregando informações do sistema...</div>
+                <div class="tool-loading">
+                    <div class="spinner-container">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="loading-text">
+                        Carregando informações do sistema<span class="loading-dots"></span>
+                    </div>
+                </div>
             `;
         }
 
@@ -493,23 +1391,25 @@ class TIWebControlApp {
             
             if (toolOutput) {
                 toolOutput.innerHTML = `
-                    <h4>💻 Informações do Sistema</h4>
-                    <div class="system-info">
-                        <div class="info-section">
-                            <h5>🖥️ Sistema Operacional</h5>
-                            <div class="info-item">📋 <strong>Plataforma:</strong> ${serverInfo.type} (${serverInfo.platform})</div>
-                            <div class="info-item">🏗️ <strong>Arquitetura:</strong> ${serverInfo.architecture}</div>
-                            <div class="info-item">📦 <strong>Versão:</strong> ${serverInfo.release}</div>
-                        </div>
-                        
-                        <div class="info-section">
-                            <h5>🖥️ Cliente (Navegador)</h5>
-                            <div class="info-item">🌐 <strong>Navegador:</strong> ${navigator.userAgent.split(' ')[0]}</div>
-                            <div class="info-item">📱 <strong>Mobile:</strong> ${window.cordova ? 'Sim (Cordova)' : 'Não'}</div>
-                            <div class="info-item">🕒 <strong>Timezone:</strong> ${Intl.DateTimeFormat().resolvedOptions().timeZone}</div>
-                            <div class="info-item">📺 <strong>Resolução:</strong> ${screen.width}x${screen.height}</div>
-                        </div>
+                    <div class="success">
+                        Informações do sistema carregadas com sucesso!
                     </div>
+                    
+                    <div class="separator"></div>
+                    
+                    <pre><strong>🖥️ Informações do Sistema</strong>
+
+📋 <span class="highlight">Plataforma:</span> ${serverInfo.type} (${serverInfo.platform})
+🏗️ <span class="highlight">Arquitetura:</span> ${serverInfo.architecture}
+📦 <span class="highlight">Versão:</span> ${serverInfo.release}</pre>
+                    
+                    <div class="separator"></div>
+                    
+                    <pre><strong>🖥️ Cliente (Navegador)</strong>
+
+🌐 <span class="highlight">Navegador:</span> ${navigator.userAgent.split(' ')[0]}
+📱 <span class="highlight">Mobile:</span> ${window.cordova ? 'Sim (Cordova)' : 'Não'}
+🕒 <span class="highlight">Timezone:</span> ${Intl.DateTimeFormat().resolvedOptions().timeZone}</pre>
                 `;
             }
         } catch (error) {
@@ -518,7 +1418,7 @@ class TIWebControlApp {
                 toolOutput.innerHTML = `
                     <h4>💻 Informações do Sistema</h4>
                     <div class="error">
-                        ❌ Erro ao carregar informações do sistema<br>
+                        Erro ao carregar informações do sistema<br>
                         <small>Detalhes: ${error.message}</small>
                     </div>
                 `;
@@ -530,18 +1430,35 @@ class TIWebControlApp {
     setupMobileMenu() {
         const mobileToggle = document.getElementById('mobile-menu-toggle');
         const navMenu = document.getElementById('nav-menu');
-        const navOverlay = document.getElementById('nav-overlay');
+        const navOverlay = document.getElementById('mobile-menu-overlay');
+        const navClose = document.getElementById('nav-close');
 
-        if (mobileToggle && navMenu && navOverlay) {
+        if (mobileToggle && navMenu) {
+            // Inicializar botões como não focalizáveis (menu inicia fechado)
+            const navButtons = navMenu.querySelectorAll('.nav-btn, .nav-close');
+            navButtons.forEach(btn => btn.setAttribute('tabindex', '-1'));
             // Toggle do menu
-            mobileToggle.addEventListener('click', () => {
+            mobileToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 this.toggleMobileMenu();
             });
 
             // Fechar menu ao clicar no overlay
-            navOverlay.addEventListener('click', () => {
-                this.closeMobileMenu();
-            });
+            if (navOverlay) {
+                navOverlay.addEventListener('click', () => {
+                    this.closeMobileMenu();
+                });
+            }
+
+            // Fechar menu com botão X
+            if (navClose) {
+                navClose.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.closeMobileMenu();
+                });
+            }
 
             // Fechar menu com ESC
             document.addEventListener('keydown', (e) => {
@@ -549,15 +1466,31 @@ class TIWebControlApp {
                     this.closeMobileMenu();
                 }
             });
+
+            // Fechar menu ao clicar em um item de navegação
+            const navBtns = navMenu.querySelectorAll('.nav-btn');
+            navBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Pequeno delay para permitir a transição da seção
+                    setTimeout(() => {
+                        this.closeMobileMenu();
+                    }, 100);
+                });
+            });
+
+            // Prevenir propagação de cliques dentro do menu
+            navMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
         }
     }
 
     toggleMobileMenu() {
         const mobileToggle = document.getElementById('mobile-menu-toggle');
         const navMenu = document.getElementById('nav-menu');
-        const navOverlay = document.getElementById('nav-overlay');
+        const navOverlay = document.getElementById('mobile-menu-overlay');
 
-        if (mobileToggle && navMenu && navOverlay) {
+        if (mobileToggle && navMenu) {
             const isActive = navMenu.classList.contains('active');
             
             if (isActive) {
@@ -571,33 +1504,360 @@ class TIWebControlApp {
     openMobileMenu() {
         const mobileToggle = document.getElementById('mobile-menu-toggle');
         const navMenu = document.getElementById('nav-menu');
-        const navOverlay = document.getElementById('nav-overlay');
+        const navOverlay = document.getElementById('mobile-menu-overlay');
 
-        if (mobileToggle && navMenu && navOverlay) {
+        if (mobileToggle && navMenu) {
+            // Adicionar classes ativas
             mobileToggle.classList.add('active');
             navMenu.classList.add('active');
-            navOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden'; // Prevenir scroll
+            
+            if (navOverlay) {
+                navOverlay.classList.add('active');
+            }
+            
+            // Prevenir scroll do body
+            document.body.style.overflow = 'hidden';
+            
+            // Adicionar atributos de acessibilidade
+            mobileToggle.setAttribute('aria-expanded', 'true');
+            navMenu.setAttribute('aria-hidden', 'false');
+            
+            // Tornar botões focalizáveis
+            const navButtons = navMenu.querySelectorAll('.nav-btn, .nav-close');
+            navButtons.forEach(btn => btn.removeAttribute('tabindex'));
+            
+            // Focar no primeiro item do menu
+            const firstNavBtn = navMenu.querySelector('.nav-btn');
+            if (firstNavBtn) {
+                setTimeout(() => firstNavBtn.focus(), 300);
+            }
         }
     }
 
     closeMobileMenu() {
         const mobileToggle = document.getElementById('mobile-menu-toggle');
         const navMenu = document.getElementById('nav-menu');
-        const navOverlay = document.getElementById('nav-overlay');
+        const navOverlay = document.getElementById('mobile-menu-overlay');
 
-        if (mobileToggle && navMenu && navOverlay) {
+        if (mobileToggle && navMenu) {
+            // Remover classes ativas
             mobileToggle.classList.remove('active');
             navMenu.classList.remove('active');
-            navOverlay.classList.remove('active');
-            document.body.style.overflow = ''; // Restaurar scroll
+            
+            if (navOverlay) {
+                navOverlay.classList.remove('active');
+            }
+            
+            // Restaurar scroll do body
+            document.body.style.overflow = '';
+            
+            // Atualizar atributos de acessibilidade
+            mobileToggle.setAttribute('aria-expanded', 'false');
+            navMenu.setAttribute('aria-hidden', 'true');
+            
+            // Tornar botões não focalizáveis quando menu está fechado
+            const navButtons = navMenu.querySelectorAll('.nav-btn, .nav-close');
+            navButtons.forEach(btn => btn.setAttribute('tabindex', '-1'));
+            
+            // Retornar foco para o botão hambúrguer
+            mobileToggle.focus();
         }
     }
+
+    // Método para configurar o botão flutuante (FAB)
+    setupFloatingActionButton() {
+        const fab = document.getElementById('fab-create-ticket');
+        
+        if (fab) {
+            // Garantir visibilidade inicial do FAB
+            fab.style.opacity = '1';
+            fab.style.pointerEvents = 'auto';
+            fab.style.display = 'flex';
+            fab.style.visibility = 'visible';
+            
+            // Adicionar listener de clique
+            fab.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Navegar para a seção de novo atendimento
+                this.showSection('novo-atendimento');
+                
+                // Fechar menu mobile se estiver aberto
+                this.closeMobileMenu();
+                
+                // Focar no primeiro campo do formulário após um pequeno delay
+                setTimeout(() => {
+                    const firstInput = document.querySelector('#novo-atendimento input, #novo-atendimento select');
+                    if (firstInput) {
+                        firstInput.focus();
+                    }
+                }, 300);
+                
+                // Feedback visual
+                this.showNotification('📝 Criando novo atendimento...', 'info');
+            });
+
+            // Adicionar efeito de ripple ao clicar
+            fab.addEventListener('mousedown', (e) => {
+                this.createRippleEffect(e, fab);
+            });
+            
+            // Ocultar FAB quando estiver na seção de novo atendimento
+            this.hideFabOnNewSection();
+        } else {
+            console.error('FAB não encontrado no DOM!');
+        }
+    }
+
+    // Método para criar efeito ripple no FAB
+    createRippleEffect(event, element) {
+        const ripple = document.createElement('span');
+        const rect = element.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = event.clientX - rect.left - size / 2;
+        const y = event.clientY - rect.top - size / 2;
+        
+        ripple.style.cssText = `
+            position: absolute;
+            width: ${size}px;
+            height: ${size}px;
+            left: ${x}px;
+            top: ${y}px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s ease-out;
+            pointer-events: none;
+        `;
+        
+        // Adicionar keyframes se não existir
+        if (!document.querySelector('#ripple-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'ripple-keyframes';
+            style.textContent = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(2);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Não alterar position para manter o FAB fixo
+        element.style.overflow = 'hidden';
+        element.appendChild(ripple);
+        
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
+    }
+
+    // Método para ocultar FAB na seção de novo atendimento
+    hideFabOnNewSection() {
+        const fab = document.getElementById('fab-create-ticket');
+        if (!fab) return;
+
+        // Observer para detectar mudanças de seção
+        const observer = new MutationObserver(() => {
+            const novoSection = document.getElementById('novo-atendimento');
+            const isNovoActive = novoSection && !novoSection.classList.contains('hidden');
+            
+            if (isNovoActive) {
+                fab.style.opacity = '0';
+                fab.style.pointerEvents = 'none';
+            } else {
+                fab.style.opacity = '1';
+                fab.style.pointerEvents = 'auto';
+            }
+        });
+
+        // Observar mudanças nas classes das seções
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section, { 
+                attributes: true, 
+                attributeFilter: ['class'] 
+            });
+        });
+    }
+
+    // ===== FUNÇÕES PARA CRIAR USUÁRIO =====
+
+    setupCreateUserForm() {
+        const form = document.getElementById('createUserForm');
+        if (!form) return;
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.createUser();
+        });
+
+        // Validação em tempo real
+        const passwordInput = document.getElementById('newPassword');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        
+        if (passwordInput && confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', () => {
+                this.validatePasswordMatch();
+            });
+            
+            passwordInput.addEventListener('input', () => {
+                this.validatePasswordMatch();
+            });
+        }
+    }
+
+    validatePasswordMatch() {
+        const password = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const confirmInput = document.getElementById('confirmPassword');
+
+        if (confirmPassword && password !== confirmPassword) {
+            confirmInput.setCustomValidity('As senhas não coincidem');
+            confirmInput.style.borderColor = '#e53e3e';
+        } else {
+            confirmInput.setCustomValidity('');
+            confirmInput.style.borderColor = '';
+        }
+    }
+
+    async createUser() {
+        const form = document.getElementById('createUserForm');
+        const formData = new FormData(form);
+        
+        const userData = {
+            username: formData.get('username'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            confirmPassword: formData.get('confirmPassword'),
+            role: formData.get('role')
+        };
+
+        // Validações básicas
+        if (!userData.username || !userData.email || !userData.password) {
+            this.showUserMessage('Por favor, preencha todos os campos obrigatórios.', 'error');
+            return;
+        }
+
+        if (userData.password !== userData.confirmPassword) {
+            this.showUserMessage('As senhas não coincidem.', 'error');
+            return;
+        }
+
+        if (userData.password.length < 6) {
+            this.showUserMessage('A senha deve ter pelo menos 6 caracteres.', 'error');
+            return;
+        }
+
+        // Validação de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(userData.email)) {
+            this.showUserMessage('Por favor, insira um email válido.', 'error');
+            return;
+        }
+
+        try {
+            this.showUserMessage('Criando usuário...', 'info');
+            
+            const response = await fetch('/api/users/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeaders()
+                },
+                body: JSON.stringify({
+                    username: userData.username,
+                    email: userData.email,
+                    password: userData.password,
+                    role: userData.role
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                this.showUserMessage(`✅ Usuário "${userData.username}" criado com sucesso!`, 'success');
+                this.clearUserForm();
+            } else {
+                this.showUserMessage(`❌ Erro: ${result.message || 'Falha ao criar usuário'}`, 'error');
+            }
+        } catch (error) {
+            console.error('Erro ao criar usuário:', error);
+            this.showUserMessage('❌ Erro de conexão. Tente novamente.', 'error');
+        }
+    }
+
+    clearUserForm() {
+        const form = document.getElementById('createUserForm');
+        if (form) {
+            form.reset();
+            
+            // Limpar validações customizadas
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            if (confirmPasswordInput) {
+                confirmPasswordInput.setCustomValidity('');
+                confirmPasswordInput.style.borderColor = '';
+            }
+        }
+        
+        this.hideUserMessage();
+    }
+
+    showUserMessage(message, type = 'info') {
+        // Remove mensagem anterior se existir
+        this.hideUserMessage();
+        
+        const container = document.querySelector('#criar-usuario .form-container');
+        if (!container) return;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        messageDiv.id = 'user-form-message';
+        
+        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        messageDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+        
+        container.appendChild(messageDiv);
+        
+        // Auto-remover mensagens de sucesso após 5 segundos
+        if (type === 'success') {
+            setTimeout(() => {
+                this.hideUserMessage();
+            }, 5000);
+        }
+    }
+
+    hideUserMessage() {
+        const message = document.getElementById('user-form-message');
+        if (message) {
+            message.remove();
+        }
+    }
+
+    /**
+     * 🧹 Limpa todos os caches possíveis do navegador
+     * Usado após criar/atualizar atendimentos para garantir dados atualizados
+     */
+
 }
+
+// Função global para logout
+window.logout = function() {
+    // Limpar dados de autenticação
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    
+    // Mostrar notificação de logout
+    console.log('🔓 Logout realizado com sucesso');
+    
+    // Redirecionar para página de login
+    window.location.href = '/login.html';
+};
 
 // Inicializar aplicação
 let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new TIWebControlApp();
-console.log('🚀 TI-WebControl App iniciado com sucesso!');
 });
