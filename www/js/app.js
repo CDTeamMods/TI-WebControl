@@ -12,11 +12,9 @@ class TIWebControlApp {
 
     async init() {
         try {
-            console.log('🚀 Iniciando aplicação...');
             
             // Configurar interface básica
             this.setupEventListeners();
-            this.setupMobileFeatures();
             this.setupCreateUserForm();
             
             // Carregar dados públicos (que não precisam de autenticação)
@@ -24,33 +22,25 @@ class TIWebControlApp {
             
             // Verificar se há token de autenticação
             const token = localStorage.getItem('authToken');
-            console.log('🔑 Token encontrado:', !!token);
             
             if (token) {
                 try {
                     // Se há token, verificar autenticação e carregar dados protegidos
-                    console.log('🔍 Verificando autenticação...');
                     await this.checkAuth();
-                    console.log('✅ Autenticação válida');
                     
                     this.setupUserInterface();
                     await this.loadProtectedData();
                 } catch (authError) {
-                    console.error('❌ Erro na autenticação:', authError);
                     // Token inválido, redirecionar para login
                     window.location.href = '/login.html';
                     return;
                 }
             } else {
-                // Se não há token, redirecionar para login
-                console.log('🔄 Sem token, redirecionando para login');
                 window.location.href = '/login.html';
                 return;
             }
             
-            console.log('✅ Aplicação inicializada com sucesso');
         } catch (error) {
-            console.error('❌ Erro ao inicializar aplicação:', error);
             // Em caso de erro, redirecionar para login
             window.location.href = '/login.html';
         }
@@ -80,7 +70,6 @@ class TIWebControlApp {
             this.user = data.user;
             return true;
         } catch (error) {
-            console.error('❌ Erro na verificação de autenticação:', error);
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             throw error;
@@ -110,7 +99,7 @@ class TIWebControlApp {
             // Mostrar seção inicial
             this.showSection('dashboard');
         } catch (error) {
-            console.error('❌ Erro ao carregar dados protegidos:', error);
+            throw new Error(error)
         }
     }
 
@@ -149,14 +138,6 @@ class TIWebControlApp {
     }
 
     setupEventListeners() {
-        // Debug global para cliques no FAB
-        document.addEventListener('click', (e) => {
-            console.log('🌍 [DEBUG] Clique global detectado em:', e.target);
-            if (e.target.closest('#fab-create-ticket')) {
-                console.log('🎯 [DEBUG] *** CLIQUE NO FAB DETECTADO VIA LISTENER GLOBAL! ***');
-            }
-        });
-        
         // Menu mobile hambúrguer
         this.setupMobileMenu();
         
@@ -218,76 +199,6 @@ class TIWebControlApp {
         }
     }
 
-    setupMobileFeatures() {
-        // Funcionalidades específicas para mobile
-        console.log('🔧 Configurando funcionalidades mobile...');
-        
-        // Adicionar suporte a vibração para notificações
-        if (navigator.vibrate) {
-            console.log('📳 Suporte à vibração disponível');
-        }
-        
-        // Configurar orientação da tela
-        if (screen.orientation) {
-            console.log('🔄 Controle de orientação disponível');
-        }
-        
-        // Configurar Hot Code Push
-        this.setupHotCodePush();
-    }
-    
-    setupHotCodePush() {
-        if (!window.chcp) {
-            console.log('⚠️ Hot Code Push não disponível');
-            return;
-        }
-        
-        console.log('🔄 Inicializando Hot Code Push...');
-        
-        // Verificar atualizações automaticamente
-        chcp.fetchUpdate((error, data) => {
-            if (error) {
-                console.log('❌ Erro ao verificar atualizações:', error.description);
-                return;
-            }
-            
-            console.log('✅ Atualização disponível:', data);
-            this.showNotification('Nova atualização disponível! 🚀', 'info');
-            
-            // Instalar automaticamente
-            chcp.installUpdate((error) => {
-                if (error) {
-                    console.log('❌ Erro ao instalar atualização:', error.description);
-                    this.showNotification('Erro ao instalar atualização', 'error');
-                    return;
-                }
-                
-                console.log('✅ Atualização instalada com sucesso!');
-                this.showNotification('Atualização instalada! Reiniciando...', 'success');
-                
-                // Reiniciar após 2 segundos
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            });
-        });
-        
-        // Listener para eventos de atualização
-        document.addEventListener('chcp_updateIsReadyToInstall', () => {
-            console.log('📦 Atualização pronta para instalar');
-            this.showNotification('Atualização baixada! Instalando...', 'info');
-        });
-        
-        document.addEventListener('chcp_updateLoadFailed', (eventData) => {
-            console.log('❌ Falha ao carregar atualização:', eventData.detail.error);
-            this.showNotification('Falha ao carregar atualização', 'error');
-        });
-        
-        document.addEventListener('chcp_nothingToUpdate', () => {
-            console.log('✅ App está atualizado');
-        });
-    }
-
     showSection(sectionName) {
         // Remover classe active de todas as seções
         document.querySelectorAll('.section').forEach(section => {
@@ -331,11 +242,8 @@ class TIWebControlApp {
                 
                 if (titleElement) titleElement.textContent = data.websiteName;
                 if (headerTitle) headerTitle.textContent = data.websiteName;
-            } else {
-                console.warn('⚠️ Não foi possível carregar o nome do website');
-            }
+            } 
         } catch (error) {
-            console.warn('⚠️ Erro ao carregar nome do website:', error);
             // Usar nome padrão se houver erro
             const titleElement = document.querySelector('title');
             const headerTitle = document.querySelector('h1');
@@ -365,11 +273,9 @@ class TIWebControlApp {
                 
                 this.populateClienteDropdown(clientes);
             } else {
-                console.warn('⚠️ Não foi possível carregar a lista de clientes');
                 this.populateClienteDropdown(['Cliente não encontrado']);
             }
         } catch (error) {
-            console.warn('⚠️ Erro ao carregar lista de clientes:', error);
             this.populateClienteDropdown(['Erro ao carregar clientes']);
         }
     }
@@ -394,8 +300,6 @@ class TIWebControlApp {
         optionOutro.value = 'outro';
         optionOutro.textContent = '➕ Outro (especificar)';
         clienteSelect.appendChild(optionOutro);
-
-        console.log(`✅ ${clientes.length} clientes carregados no dropdown`);
     }
 
     async loadEmpresas() {
@@ -408,11 +312,9 @@ class TIWebControlApp {
                 this.populateEmpresaDropdown(empresas);
                 // Armazenar dados completos para uso posterior
                 this.empresasData = data;
-            } else {
-                console.warn('⚠️ Não foi possível carregar a lista de empresas');
             }
         } catch (error) {
-            console.warn('⚠️ Erro ao carregar lista de empresas:', error);
+            throw new Error(error)
         }
     }
 
@@ -436,8 +338,6 @@ class TIWebControlApp {
         outroOption.value = 'outro';
         outroOption.textContent = 'Outro (especificar)';
         empresaSelect.appendChild(outroOption);
-
-        console.log(`✅ ${empresas.length} empresas carregadas no dropdown`);
     }
 
     async loadEmpresasFilter() {
@@ -449,10 +349,9 @@ class TIWebControlApp {
                 const empresas = data.map(item => item.empresa);
                 this.populateEmpresaFilter(empresas);
             } else {
-                console.warn('⚠️ Não foi possível carregar a lista de empresas para o filtro');
             }
         } catch (error) {
-            console.warn('⚠️ Erro ao carregar lista de empresas para o filtro:', error);
+            throw new Error(error)
         }
     }
 
@@ -535,7 +434,6 @@ class TIWebControlApp {
     loadDashboard() {
         // Garantir que this.atendimentos seja um array válido
         if (!Array.isArray(this.atendimentos)) {
-            console.warn('loadDashboard: this.atendimentos não é um array, inicializando como array vazio');
             this.atendimentos = [];
         }
 
@@ -569,7 +467,6 @@ class TIWebControlApp {
 
         // Garantir que this.atendimentos seja um array válido
         if (!Array.isArray(this.atendimentos)) {
-            console.warn('loadRecentActivity: this.atendimentos não é um array, inicializando como array vazio');
             this.atendimentos = [];
         }
 
@@ -888,7 +785,6 @@ class TIWebControlApp {
                 throw new Error('Erro ao criar atendimento');
             }
         } catch (error) {
-            console.error('Erro ao criar atendimento:', error);
             this.showNotification('❌ Erro ao criar atendimento. Tente novamente.', 'error');
         }
     }
@@ -907,17 +803,13 @@ class TIWebControlApp {
                 // Garantir que sempre seja um array
                 this.atendimentos = Array.isArray(atendimentos) ? atendimentos : [];
                 this.saveAtendimentos(); // Salvar no localStorage como backup
-            } else {
-                console.warn('Erro ao carregar atendimentos da API, usando dados locais');
             }
         } catch (error) {
-            console.error('Erro ao carregar atendimentos:', error);
-            console.warn('Usando dados locais como fallback');
+            throw new Error(error)
         }
 
         // Garantir que atendimentos sempre seja um array antes de usar
         if (!Array.isArray(this.atendimentos)) {
-            console.warn('Atendimentos não é um array, inicializando como array vazio');
             this.atendimentos = [];
         }
 
@@ -940,7 +832,6 @@ class TIWebControlApp {
         
         // Garantir que atendimentos seja um array válido
         if (!Array.isArray(atendimentos)) {
-            console.warn('renderAtendimentos: parâmetro não é um array, usando array vazio');
             atendimentos = [];
         }
         
@@ -1068,27 +959,18 @@ class TIWebControlApp {
         const priorityFilter = document.getElementById('filter-priority').value;
         const empresaFilter = document.getElementById('filter-empresa').value;
         
-        console.log('🔍 Filtrando atendimentos:', { statusFilter, priorityFilter, empresaFilter });
-        
         // Garantir que this.atendimentos seja um array válido
         if (!Array.isArray(this.atendimentos)) {
-            console.warn('filterAtendimentos: this.atendimentos não é um array, inicializando como array vazio');
             this.atendimentos = [];
         }
-        
-        console.log('📊 Total de atendimentos:', this.atendimentos.length);
         
         let filteredAtendimentos = this.atendimentos;
         
         if (statusFilter) {
             filteredAtendimentos = filteredAtendimentos.filter(atendimento => {
                 const match = atendimento.status && atendimento.status.toLowerCase() === statusFilter.toLowerCase();
-                if (!match) {
-                    console.log('❌ Status não corresponde:', atendimento.status, 'vs', statusFilter);
-                }
                 return match;
             });
-            console.log('📋 Após filtro de status:', filteredAtendimentos.length);
         }
         
         if (priorityFilter) {
@@ -1096,21 +978,15 @@ class TIWebControlApp {
                 const match = atendimento.prioridade && atendimento.prioridade.toLowerCase() === priorityFilter.toLowerCase();
                 return match;
             });
-            console.log('⚡ Após filtro de prioridade:', filteredAtendimentos.length);
         }
         
         if (empresaFilter) {
             filteredAtendimentos = filteredAtendimentos.filter(atendimento => {
                 const match = atendimento.empresa === empresaFilter;
-                if (!match) {
-                    console.log('❌ Empresa não corresponde:', atendimento.empresa, 'vs', empresaFilter);
-                }
                 return match;
             });
-            console.log('🏢 Após filtro de empresa:', filteredAtendimentos.length);
         }
-        
-        console.log('✅ Resultado final da filtragem:', filteredAtendimentos.length);
+
         this.renderAtendimentos(filteredAtendimentos);
     }
 
@@ -1151,7 +1027,6 @@ class TIWebControlApp {
                 throw new Error('Erro ao atualizar status do atendimento');
             }
         } catch (error) {
-            console.error('Erro ao atualizar status:', error);
             this.showNotification('❌ Erro ao atualizar status. Tente novamente.', 'error');
         }
     }
@@ -1179,7 +1054,6 @@ class TIWebControlApp {
                     throw new Error('Erro ao excluir atendimento');
                 }
             } catch (error) {
-                console.error('Erro ao excluir atendimento:', error);
                 this.showNotification('❌ Erro ao excluir atendimento. Tente novamente.', 'error');
             }
         }
@@ -1235,14 +1109,12 @@ class TIWebControlApp {
             
             // Verificar se a data é válida
             if (isNaN(date.getTime())) {
-                console.warn('Data inválida detectada:', dateString);
                 return 'Data não informada';
             }
             
             // Verificar se a data não é muito antiga (antes de 1970) ou muito futura
             const year = date.getFullYear();
             if (year < 1970 || year > 2100) {
-                console.warn('Data fora do intervalo válido:', dateString, 'Ano:', year);
                 return 'Data não informada';
             }
             
@@ -1251,7 +1123,6 @@ class TIWebControlApp {
                 minute: '2-digit'
             });
         } catch (error) {
-            console.warn('Erro ao formatar data:', dateString, error);
             return 'Data não informada';
         }
     }
@@ -1330,7 +1201,6 @@ class TIWebControlApp {
             this.showNotification('✅ Arquivo Excel baixado com sucesso!', 'success');
             
         } catch (error) {
-            console.error('Erro ao exportar Excel:', error);
             this.showNotification('❌ Erro ao exportar arquivo Excel', 'error');
         }
     }
@@ -1359,19 +1229,15 @@ class TIWebControlApp {
             `;
         }
 
-        try {
-            console.log('🔍 Iniciando requisição para /api/system-info');
-            
+        try  {
             // Obter informações do servidor (com timestamp para evitar cache)
             const response = await fetch(`/api/system-info?t=${Date.now()}`);
-            console.log('📡 Resposta recebida:', response.status, response.statusText);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
             const contentType = response.headers.get('content-type');
-            console.log('📋 Content-Type:', contentType);
             
             if (!contentType || !contentType.includes('application/json')) {
                 const text = await response.text();
@@ -1379,7 +1245,6 @@ class TIWebControlApp {
             }
             
             const serverInfo = await response.json();
-            console.log('✅ Dados do servidor carregados:', serverInfo);
             
             // Calcular uso de memória
             const memoryUsage = ((serverInfo.totalMemory - serverInfo.freeMemory) / serverInfo.totalMemory * 100).toFixed(1);
@@ -1413,7 +1278,6 @@ class TIWebControlApp {
                 `;
             }
         } catch (error) {
-            console.error('Erro ao carregar informações do sistema:', error);
             if (toolOutput) {
                 toolOutput.innerHTML = `
                     <h4>💻 Informações do Sistema</h4>
@@ -1605,8 +1469,6 @@ class TIWebControlApp {
             
             // Ocultar FAB quando estiver na seção de novo atendimento
             this.hideFabOnNewSection();
-        } else {
-            console.error('FAB não encontrado no DOM!');
         }
     }
 
@@ -1784,7 +1646,6 @@ class TIWebControlApp {
                 this.showUserMessage(`❌ Erro: ${result.message || 'Falha ao criar usuário'}`, 'error');
             }
         } catch (error) {
-            console.error('Erro ao criar usuário:', error);
             this.showUserMessage('❌ Erro de conexão. Tente novamente.', 'error');
         }
     }
@@ -1848,9 +1709,6 @@ window.logout = function() {
     // Limpar dados de autenticação
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
-    
-    // Mostrar notificação de logout
-    console.log('🔓 Logout realizado com sucesso');
     
     // Redirecionar para página de login
     window.location.href = '/login.html';

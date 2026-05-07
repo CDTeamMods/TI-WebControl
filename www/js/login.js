@@ -44,21 +44,19 @@ class LoginManager {
                     const data = await response.json();
                     if (data.success) {
                         // Token válido, redirecionar para dashboard
-                        console.log('✅ Token válido, redirecionando para dashboard');
                         window.location.href = '/';
                         return;
                     }
                 }
                 
                 // Se chegou aqui, token é inválido
-                console.log('❌ Token inválido, removendo do localStorage');
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('user');
             } catch (error) {
-                console.error('❌ Erro ao verificar token:', error);
                 // Token inválido, remover do localStorage
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('user');
+                throw new Error(error)
             }
         }
     }
@@ -103,7 +101,6 @@ class LoginManager {
                 this.showMessage(data.message || 'Erro ao fazer login', 'error');
             }
         } catch (error) {
-            console.error('Erro no login:', error);
             this.showMessage('Erro de conexão. Tente novamente.', 'error');
         } finally {
             this.setLoading(false);
@@ -151,7 +148,7 @@ class LoginManager {
                 }
             }
         } catch (error) {
-            console.log('Erro ao verificar visibilidade das credenciais:', error);
+            throw new Error(error)
             // Em caso de erro, manter as credenciais visíveis por segurança
         }
     }

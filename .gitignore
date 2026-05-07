@@ -1,5 +1,4 @@
 node_modules/
-.trae/
 .env
 
 **/*.log
@@ -8,4 +7,3 @@ node_modules/
 config.xml
 **/chcp.json
 **/*.db
-**/listaClientes.json

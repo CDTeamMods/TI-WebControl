@@ -38,11 +38,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'www')));
 
 // 🔧 Validar configuração de banco de dados
-console.log(chalk.blue.bold('🚀 Iniciando Sistema de Suporte TecSave...\n'));
 const dbConfig = databaseConfig.displayConfig();
 
 // Inicializar banco de dados
-console.log(chalk.yellow('⚡ Inicializando banco de dados...'));
 await database.initialize();
 console.log(chalk.green('✅ Banco de dados inicializado com sucesso!\n'));
 

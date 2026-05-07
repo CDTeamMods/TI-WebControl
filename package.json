@@ -4,25 +4,20 @@
   "description": "Sistema de Suporte Técnico - Web e Mobile",
   "main": "index.mjs",
   "type": "module",
+  "engines": {
+    "yarn": ">=1.22.22",
+    "node": ">=25.9.0",
+    "npm": "please-use-yarn"
+  },
   "scripts": {
     "start": "npx nodemon index.mjs",
-    "dev": "npx nodemon index.mjs",
-    "build:config": "node scripts/build-config.mjs",
-    "prebuild": "yarn build:config",
-    "build": "yarn cordova:build",
-    "cordova:add": "cordova platform add android",
-    "cordova:build": "cordova build android",
-    "cordova:run": "cordova run android",
-    "hcp:build": "cordova-hcp build",
-    "hcp:server": "cordova-hcp server",
-    "hcp:init": "cordova-hcp init"
+    "dev": "npx nodemon index.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.4.1",
     "body-parser": "^2.2.0",
     "chalk": "^5.6.2",
-    "cordova-hot-code-push-plugin": "^1.5.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "exceljs": "^4.4.0",
@@ -33,35 +28,19 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "cordova": "^12.0.0",
     "nodemon": "^3.1.10"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CDTeamMods.git"
+    "url": "git+https://github.com/CDTeamMods/TI-WebControl.git"
   },
   "author": {
     "name": "CDTeamMods",
-    "email": "contato@cdteam.xyz",
     "url": "https://github.com/CDTeamMods"
   },
-  "keywords": [
-    "remote",
-    "web",
-    "control",
-    "ti",
-    "admin",
-    "access",
-    "dashboard",
-    "support",
-    "monitoring",
-    "nodejs",
-    "express",
-    "socket"
-  ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/CoohCooh/Suporte-TecSave/issues"
+    "url": "https://github.com/CDTeamMods/TI-WebControl/issues"
   },
-  "homepage": "https://github.com/CoohCooh/Suporte-TecSave#readme"
+  "homepage": "https://github.com/CDTeamMods/TI-WebControl#readme"
 }
